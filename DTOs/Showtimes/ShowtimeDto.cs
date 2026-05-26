@@ -1,0 +1,55 @@
+using System;
+
+namespace CinemaBooking.API.DTOs.Showtimes
+{
+    public class ShowtimeDto
+    {
+        public int ShowtimeId { get; set; }
+        public int MovieId { get; set; }
+        public string MovieTitle { get; set; } = null!;
+        public int HallId { get; set; }
+        public string HallName { get; set; } = null!;
+        public int CinemaId { get; set; }
+        public string CinemaName { get; set; } = null!;
+        public int PriceId { get; set; }
+        public decimal PriceValue { get; set; }
+        public string TicketType { get; set; } = null!;
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public int AvailableSeats { get; set; }
+        public int TotalSeats { get; set; }
+    }
+
+    public class ShowtimeCreateDto
+    {
+        public int MovieId { get; set; }
+        public int HallId { get; set; }
+        public int PriceId { get; set; }
+        public DateTime StartTime { get; set; }
+    }
+
+    public class ShowtimeUpdateDto
+    {
+        public int MovieId { get; set; }
+        public int HallId { get; set; }
+        public int PriceId { get; set; }
+        public DateTime StartTime { get; set; }
+    }
+
+    public class ShowtimeQueryParameters
+    {
+        private const int MaxPageSize = 50;
+        public int PageNumber { get; set; } = 1;
+
+        private int _pageSize = 10;
+        public int PageSize
+        {
+            get => _pageSize;
+            set => _pageSize = (value > MaxPageSize) ? MaxPageSize : value;
+        }
+
+        public int? CinemaId { get; set; }
+        public int? MovieId { get; set; }
+        public DateTime? Date { get; set; }
+    }
+}

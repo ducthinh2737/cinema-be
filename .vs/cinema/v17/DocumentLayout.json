@@ -1,0 +1,252 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\cinema.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:cinema.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\validators\\loginvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:validators\\loginvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\validators\\registervalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:validators\\registervalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\validators\\bookingvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:validators\\bookingvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\mappings\\bookingprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:mappings\\bookingprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\mappings\\userprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:mappings\\userprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\mappings\\movieprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:mappings\\movieprofile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\models\\showtimes\\showtime.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:models\\showtimes\\showtime.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|c:\\users\\admin\\downloads\\cinema\\cinema\\validators\\paymentvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5AB8EDC2-9FB6-4E6B-883E-83B1E8DDEF19}|cinema.csproj|solutionrelative:validators\\paymentvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{e1b7d1f8-9b3c-49b1-8f4f-bfc63a88835d}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:611123559:0:{83107a3e-496a-485e-b455-16ddb978e55e}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 1191,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "cinema",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\cinema.csproj",
+              "RelativeDocumentMoniker": "cinema.csproj",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\cinema.csproj",
+              "RelativeToolTip": "cinema.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-05-26T09:11:37.292Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "RegisterValidator.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\RegisterValidator.cs",
+              "RelativeDocumentMoniker": "Validators\\RegisterValidator.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\RegisterValidator.cs",
+              "RelativeToolTip": "Validators\\RegisterValidator.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:41:12.006Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "BookingValidator.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\BookingValidator.cs",
+              "RelativeDocumentMoniker": "Validators\\BookingValidator.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\BookingValidator.cs",
+              "RelativeToolTip": "Validators\\BookingValidator.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:41:09.438Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "LoginValidator.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\LoginValidator.cs",
+              "RelativeDocumentMoniker": "Validators\\LoginValidator.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\LoginValidator.cs",
+              "RelativeToolTip": "Validators\\LoginValidator.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAABBAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:38:44.97Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:38:19.453Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "UserProfile.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\UserProfile.cs",
+              "RelativeDocumentMoniker": "Mappings\\UserProfile.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\UserProfile.cs",
+              "RelativeToolTip": "Mappings\\UserProfile.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:38:03.461Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MovieProfile.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\MovieProfile.cs",
+              "RelativeDocumentMoniker": "Mappings\\MovieProfile.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\MovieProfile.cs",
+              "RelativeToolTip": "Mappings\\MovieProfile.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:37:57.552Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Showtime.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Models\\Showtimes\\Showtime.cs",
+              "RelativeDocumentMoniker": "Models\\Showtimes\\Showtime.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Models\\Showtimes\\Showtime.cs",
+              "RelativeToolTip": "Models\\Showtimes\\Showtime.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:37:07.013Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "PaymentValidator.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\PaymentValidator.cs",
+              "RelativeDocumentMoniker": "Validators\\PaymentValidator.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Validators\\PaymentValidator.cs",
+              "RelativeToolTip": "Validators\\PaymentValidator.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:36:33.123Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "BookingProfile.cs",
+              "DocumentMoniker": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\BookingProfile.cs",
+              "RelativeDocumentMoniker": "Mappings\\BookingProfile.cs",
+              "ToolTip": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\Mappings\\BookingProfile.cs",
+              "RelativeToolTip": "Mappings\\BookingProfile.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T08:36:26.711Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{0ad07096-bba9-4900-a651-0598d26f6d24}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 37,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 37,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{f677620d-05fd-48ed-8423-72a12db4deef}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
