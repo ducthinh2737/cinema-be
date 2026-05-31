@@ -9,6 +9,10 @@ namespace CinemaBooking.API.Mappings
         public NotificationProfile()
         {
             CreateMap<Notification, NotificationDto>();
+            CreateMap<Notification, NotificationSummaryDto>();
+            CreateMap<Notification, NotificationDetailDto>();
+            CreateMap<Notification, NotificationRealtimeDto>()
+                .ForMember(dest => dest.UnreadCount, opt => opt.Ignore());
         }
     }
 }

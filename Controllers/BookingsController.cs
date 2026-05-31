@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CinemaBooking.API.DTOs.Bookings;
 using CinemaBooking.API.Services.Interfaces;
+using CinemaBooking.API.Services.Implementations;
 
 namespace CinemaBooking.API.Controllers
 {
@@ -24,95 +25,74 @@ namespace CinemaBooking.API.Controllers
         public async Task<IActionResult> CreateBooking([FromBody] BookingCreateDto createDto)
         {
             var userId = GetUserId();
-            if (userId == null) return Unauthorized(new { Message = "Unauthorized access." });
+            if (userId == null) return Unauthorized(ApiResponse.Fail<object>("Unauthorized access."));
 
-            try
+            var result = await _bookingService.CreateBookingAsync(userId.Value, createDto);
+            if (!result.IsSuccess)
             {
-                var booking = await _bookingService.CreateBookingAsync(userId.Value, createDto);
-                return CreatedAtAction(nameof(GetBookingById), new { id = booking.BookingId }, booking);
+                return BadRequest(result);
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error occurred while creating booking.", Details = ex.InnerException?.Message ?? ex.Message });
-            }
+            return CreatedAtAction(nameof(GetBookingById), new { id = result.Data.BookingId }, result);
         }
 
         [HttpPost("confirm")]
         public async Task<IActionResult> ConfirmBooking([FromBody] BookingConfirmDto confirmDto)
         {
-            try
+            var result = await _bookingService.ConfirmBookingAsync(confirmDto);
+            if (!result.IsSuccess)
             {
-                var booking = await _bookingService.ConfirmBookingAsync(confirmDto);
-                return Ok(booking);
+                return BadRequest(result);
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { Message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error occurred while confirming booking.", Details = ex.InnerException?.Message ?? ex.Message });
-            }
+            return Ok(result);
         }
 
         [HttpPost("cancel")]
         public async Task<IActionResult> CancelBooking([FromBody] BookingCancelDto cancelDto)
         {
-            try
+            var result = await _bookingService.CancelBookingAsync(cancelDto.BookingId);
+            if (!result.IsSuccess)
             {
-                var success = await _bookingService.CancelBookingAsync(cancelDto.BookingId);
-                if (!success)
-                {
-                    return NotFound(new { Message = $"Booking with ID {cancelDto.BookingId} not found." });
-                }
-                return Ok(new { Message = "Booking has been successfully cancelled." });
+                return BadRequest(result);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error occurred while cancelling booking.", Details = ex.InnerException?.Message ?? ex.Message });
-            }
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> GetAllBookings()
+        {
+            var result = await _bookingService.GetAllBookingsAsync();
+            return Ok(result);
         }
 
         [HttpGet("my-bookings")]
         public async Task<IActionResult> GetMyBookings()
         {
             var userId = GetUserId();
-            if (userId == null) return Unauthorized(new { Message = "Unauthorized access." });
+            if (userId == null) return Unauthorized(ApiResponse.Fail<object>("Unauthorized access."));
 
-            var bookings = await _bookingService.GetUserBookingsAsync(userId.Value);
-            return Ok(bookings);
+            var result = await _bookingService.GetUserBookingsAsync(userId.Value);
+            return Ok(result);
         }
+
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetBookingById(int id)
         {
-            var booking = await _bookingService.GetBookingByIdAsync(id);
-            if (booking == null)
+            var result = await _bookingService.GetBookingByIdAsync(id);
+            if (!result.IsSuccess)
             {
-                return NotFound(new { Message = $"Booking with ID {id} not found." });
+                return NotFound(result);
             }
 
-            // Optional security: Ensure user can only view their own bookings unless Admin
             var userId = GetUserId();
             var role = User.FindFirstValue(ClaimTypes.Role);
-            if (booking.UserId != userId && role != "Admin")
+            if (result.Data.UserId != userId && role != "Admin")
             {
-                return Forbid(new Microsoft.AspNetCore.Authentication.AuthenticationProperties(), "You are not authorized to view this booking.");
+                return Forbid();
             }
 
-            return Ok(booking);
+            return Ok(result);
         }
 
         private int? GetUserId()

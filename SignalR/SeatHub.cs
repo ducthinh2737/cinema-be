@@ -6,6 +6,13 @@ using CinemaBooking.API.Services.Interfaces;
 
 namespace CinemaBooking.API.SignalR
 {
+    public class SeatHubResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public List<int> SeatIds { get; set; } = new();
+    }
+
     public class SeatHub : Hub
     {
         private readonly ISeatLockService _seatLockService;
@@ -15,35 +22,89 @@ namespace CinemaBooking.API.SignalR
             _seatLockService = seatLockService;
         }
 
-        public async Task SelectSeat(int showtimeId, int seatId, string userId)
+        public async Task JoinShowtime(int showtimeId)
         {
-            var locked = await _seatLockService.LockSeatAsync(showtimeId, seatId, userId);
-            if (locked)
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"Showtime_{showtimeId}");
+        }
+
+        public async Task LeaveShowtime(int showtimeId)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Showtime_{showtimeId}");
+        }
+
+        public async Task<SeatHubResponse> SelectSeat(int showtimeId, int seatId, string userId, string sessionId)
+        {
+            var locked = await _seatLockService.LockSeatAsync(showtimeId, seatId, userId, sessionId, 5, Context.ConnectionAborted);
+            if (locked != null && locked.Success)
             {
-                // Notify other clients that this seat is locked
-                await Clients.Others.SendAsync("SeatSelected", showtimeId, seatId, userId);
+                return new SeatHubResponse 
+                { 
+                    Success = true, 
+                    Message = "Seat locked successfully.", 
+                    SeatIds = new List<int> { seatId } 
+                };
             }
             else
             {
-                // Notify caller that seat lock failed
-                await Clients.Caller.SendAsync("SeatLockFailed", showtimeId, seatId, "Seat is already locked by another user.");
+                return new SeatHubResponse 
+                { 
+                    Success = false, 
+                    Message = locked?.Message ?? "Seat is already locked by another user.", 
+                    SeatIds = new List<int> { seatId } 
+                };
             }
         }
 
-        public async Task ReleaseSeat(int showtimeId, int seatId, string userId)
+        public async Task<SeatHubResponse> ReleaseSeat(int showtimeId, int seatId, string userId, string sessionId)
         {
-            var unlocked = await _seatLockService.UnlockSeatAsync(showtimeId, seatId, userId);
-            if (unlocked)
+            var unlocked = await _seatLockService.UnlockSeatAsync(showtimeId, seatId, userId, sessionId, false, Context.ConnectionAborted);
+            if (unlocked != null && unlocked.Success)
             {
-                // Notify other clients that this seat has been released
-                await Clients.Others.SendAsync("SeatReleased", showtimeId, seatId);
+                return new SeatHubResponse 
+                { 
+                    Success = true, 
+                    Message = "Seat released successfully.", 
+                    SeatIds = new List<int> { seatId } 
+                };
+            }
+            else
+            {
+                return new SeatHubResponse 
+                { 
+                    Success = false, 
+                    Message = unlocked?.Message ?? "Failed to release seat lock.", 
+                    SeatIds = new List<int> { seatId } 
+                };
             }
         }
 
         public async Task ConfirmBooking(int showtimeId, List<int> seatIds)
         {
-            // Lock is finalized and permanently booked
-            await Clients.Others.SendAsync("BookingConfirmed", showtimeId, seatIds);
+            // Lock is finalized and permanently booked; notify other clients in showtime group
+            await Clients.OthersInGroup($"Showtime_{showtimeId}").SendAsync("BookingConfirmed", showtimeId, seatIds);
+        }
+
+        public async Task<SeatHubResponse> RefreshSeatLock(int showtimeId, List<int> seatIds, string userId, string sessionId)
+        {
+            var refreshed = await _seatLockService.RefreshSeatLockAsync(showtimeId, seatIds, userId, sessionId, 5, Context.ConnectionAborted);
+            if (refreshed != null && refreshed.Success)
+            {
+                return new SeatHubResponse 
+                { 
+                    Success = true, 
+                    Message = "Seat locks refreshed successfully.", 
+                    SeatIds = seatIds 
+                };
+            }
+            else
+            {
+                return new SeatHubResponse 
+                { 
+                    Success = false, 
+                    Message = refreshed?.Message ?? "Failed to refresh seat locks.", 
+                    SeatIds = seatIds 
+                };
+            }
         }
     }
 }

@@ -18,6 +18,8 @@ namespace CinemaBooking.API.Models.Movies
         public DateTime ReleaseDate { get; set; }
         public DateTime EndDate { get; set; }
         public double Rating { get; set; }
+        public bool IsFeatured { get; set; }
+        public string Status { get; set; } = "NowShowing";
 
         public int GenreId { get; set; }
         public int AgeRatingId { get; set; }

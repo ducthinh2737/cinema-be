@@ -1,201 +1,687 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using CinemaBooking.API.Data;
 using CinemaBooking.API.DTOs.Movies;
 using CinemaBooking.API.Models.Movies;
 using CinemaBooking.API.Repositories.Interfaces;
 using CinemaBooking.API.Services.Interfaces;
+using CinemaBooking.API.SignalR;
 
 namespace CinemaBooking.API.Services.Implementations
 {
+    /// <summary>
+    /// Enterprise Movie Management Service handling movie lifecycle, 
+    /// unique SEO slug creation, validation, transaction security, 
+    /// optimized actor mapping, soft-delete rules, and performance analytics.
+    /// </summary>
     public class MovieService : IMovieService
     {
+        private readonly CinemaDbContext _context;
         private readonly IMovieRepository _movieRepository;
+        private readonly ISlugService _slugService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly IMapper _mapper;
+        private readonly ILogger<MovieService> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
-        public MovieService(IMovieRepository movieRepository, IMapper mapper)
+        public MovieService(
+            CinemaDbContext context,
+            IMovieRepository movieRepository,
+            ISlugService slugService,
+            ICurrentUserService currentUserService,
+            IMapper mapper,
+            ILogger<MovieService> logger,
+            IServiceProvider serviceProvider)
         {
+            _context = context;
             _movieRepository = movieRepository;
+            _slugService = slugService;
+            _currentUserService = currentUserService;
             _mapper = mapper;
+            _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
-        public async Task<PagedResultDto<MovieDto>> GetPagedMoviesAsync(MovieQueryParameters queryParams)
-        {
-            var (items, totalCount) = await _movieRepository.GetPagedMoviesAsync(queryParams);
+        #region Query Methods
 
-            return new PagedResultDto<MovieDto>
+        /// <summary>
+        /// Retrieves a paginated list of movies based on search terms, genres, years, and status.
+        /// </summary>
+        public async Task<ApiResponse<PagedResultDto<MovieDto>>> GetPagedMoviesAsync(MovieQueryParameters queryParams)
+        {
+            _logger.LogInformation("Retrieving paginated movies. Page: {Page}", queryParams.PageNumber);
+
+            var query = _context.Movies
+                .Include(m => m.Genre)
+                .Include(m => m.Director)
+                .AsSplitQuery()
+                .AsNoTracking();
+
+            // Handle deleted movies filter
+            if (!queryParams.IncludeDeleted)
             {
-                Items = _mapper.Map<List<MovieDto>>(items),
+                query = query.Where(m => !m.IsDeleted);
+            }
+            else
+            {
+                query = query.IgnoreQueryFilters();
+            }
+
+            // Search by Title
+            if (!string.IsNullOrEmpty(queryParams.SearchTerm))
+            {
+                var search = queryParams.SearchTerm.ToLower();
+                query = query.Where(m => m.Title.ToLower().Contains(search));
+            }
+
+            // Filter by Genre
+            if (queryParams.GenreId.HasValue)
+            {
+                query = query.Where(m => m.GenreId == queryParams.GenreId.Value);
+            }
+
+            // Filter by Release Year
+            if (queryParams.ReleaseYear.HasValue)
+            {
+                query = query.Where(m => m.ReleaseDate.Year == queryParams.ReleaseYear.Value);
+            }
+
+            // Filter by Status
+            if (!string.IsNullOrEmpty(queryParams.Status))
+            {
+                var statusLower = queryParams.Status.ToLower();
+                var now = DateTime.UtcNow;
+                query = statusLower switch
+                {
+                    "comingsoon" => query.Where(m => m.Status == "ComingSoon"),
+                    "nowshowing" => query.Where(m => m.Status == "NowShowing"),
+                    "ended" => query.Where(m => m.Status == "Ended"),
+                    "hidden" => query.IgnoreQueryFilters().Where(m => m.IsDeleted),
+                    "special" => query.Where(m => m.ReleaseDate > now && m.Showtimes.Any(s => s.StartTime >= now)),
+                    _ => query
+                };
+            }
+
+            // Sorting
+            if (!string.IsNullOrEmpty(queryParams.SortBy))
+            {
+                query = queryParams.SortBy.ToLower() switch
+                {
+                    "title" => queryParams.IsDescending ? query.OrderByDescending(m => m.Title) : query.OrderBy(m => m.Title),
+                    "releasedate" => queryParams.IsDescending ? query.OrderByDescending(m => m.ReleaseDate) : query.OrderBy(m => m.ReleaseDate),
+                    "rating" => queryParams.IsDescending ? query.OrderByDescending(m => m.Rating) : query.OrderBy(m => m.Rating),
+                    "duration" => queryParams.IsDescending ? query.OrderByDescending(m => m.Duration) : query.OrderBy(m => m.Duration),
+                    _ => queryParams.IsDescending ? query.OrderByDescending(m => m.Id) : query.OrderBy(m => m.Id)
+                };
+            }
+            else
+            {
+                query = query.OrderByDescending(m => m.ReleaseDate);
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .Skip((queryParams.PageNumber - 1) * queryParams.PageSize)
+                .Take(queryParams.PageSize)
+                .ToListAsync();
+
+            var dtos = _mapper.Map<List<MovieDto>>(items);
+
+            foreach (var dto in dtos)
+            {
+                var movieItem = items.First(x => x.Id == dto.Id);
+                dto.Status = movieItem.IsDeleted ? "Hidden" : movieItem.Status;
+            }
+
+            var pagedResult = new PagedResultDto<MovieDto>
+            {
+                Items = dtos,
                 PageNumber = queryParams.PageNumber,
                 PageSize = queryParams.PageSize,
                 TotalCount = totalCount
             };
+
+            return ApiResponse.Success(pagedResult);
         }
 
-        public async Task<MovieDetailDto?> GetMovieByIdAsync(int id)
+        /// <summary>
+        /// Gets full movie details by ID, including actors and dynamic analytics.
+        /// </summary>
+        public async Task<ApiResponse<MovieDetailDto>> GetMovieByIdAsync(int id)
         {
-            var movie = await _movieRepository.GetByIdWithDetailsAsync(id);
-            if (movie == null) return null;
+            _logger.LogInformation("Retrieving movie details by ID: {MovieId}", id);
 
-            return _mapper.Map<MovieDetailDto>(movie);
-        }
+            var movie = await _context.Movies
+                .Include(m => m.Genre)
+                .Include(m => m.Director)
+                .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-        public async Task<MovieDetailDto?> GetMovieBySlugAsync(string slug)
-        {
-            var movie = await _movieRepository.GetBySlugAsync(slug);
-            if (movie == null) return null;
-
-            return _mapper.Map<MovieDetailDto>(movie);
-        }
-
-        public async Task<MovieDetailDto> CreateMovieAsync(MovieCreateDto createDto)
-        {
-            var movie = _mapper.Map<Movie>(createDto);
-
-            // Generate unique slug
-            string baseSlug = GenerateSlug(createDto.Title);
-            string slug = baseSlug;
-            int counter = 1;
-            while (await _movieRepository.GetBySlugAsync(slug) != null)
+            if (movie == null)
             {
-                slug = $"{baseSlug}-{counter++}";
+                throw new NotFoundException($"Không tìm thấy phim có ID {id}.");
             }
-            movie.Slug = slug;
-            movie.Rating = 0.0;
-            movie.CreatedAt = DateTime.UtcNow;
-            movie.CreatedBy = "Admin";
-            movie.IsDeleted = false;
 
-            // Map Actors
-            if (createDto.ActorIds != null && createDto.ActorIds.Any())
+            var dto = _mapper.Map<MovieDetailDto>(movie);
+            dto.Status = movie.IsDeleted ? "Hidden" : movie.Status;
+
+            // Populate analytics
+            dto.Analytics = await CalculateMovieAnalyticsAsync(id);
+
+            return ApiResponse.Success(dto);
+        }
+
+        /// <summary>
+        /// Gets full movie details by slug, including actors and dynamic analytics.
+        /// </summary>
+        public async Task<ApiResponse<MovieDetailDto>> GetMovieBySlugAsync(string slug)
+        {
+            _logger.LogInformation("Retrieving movie details by Slug: {Slug}", slug);
+
+            var movie = await _context.Movies
+                .Include(m => m.Genre)
+                .Include(m => m.Director)
+                .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
+                .FirstOrDefaultAsync(m => m.Slug == slug);
+
+            if (movie == null)
             {
-                foreach (var actorId in createDto.ActorIds)
+                throw new NotFoundException($"Không tìm thấy phim có slug '{slug}'.");
+            }
+
+            var dto = _mapper.Map<MovieDetailDto>(movie);
+            dto.Status = movie.IsDeleted ? "Hidden" : movie.Status;
+
+            // Populate analytics
+            dto.Analytics = await CalculateMovieAnalyticsAsync(movie.Id);
+
+            return ApiResponse.Success(dto);
+        }
+
+        #endregion
+
+        #region Mutation Methods
+
+        /// <summary>
+        /// Creates a new movie entity, generates its unique slug, updates actors, and broadcasts.
+        /// </summary>
+        public async Task<ApiResponse<MovieDetailDto>> CreateMovieAsync(MovieCreateDto createDto)
+        {
+            _logger.LogInformation("Creating movie: {Title}", createDto.Title);
+
+            await ValidateMovieAsync(createDto);
+
+            var currentUsername = _currentUserService.UserName ?? "System";
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var movie = _mapper.Map<Movie>(createDto);
+                movie.Slug = await _slugService.GenerateUniqueSlugAsync<Movie>(createDto.Title);
+                movie.Rating = 0.0;
+                movie.CreatedAt = DateTime.UtcNow;
+                movie.CreatedBy = currentUsername;
+                movie.IsDeleted = false;
+
+                // Add actors relationship
+                if (createDto.ActorIds != null && createDto.ActorIds.Any())
                 {
-                    movie.MovieActors.Add(new MovieActor { ActorId = actorId });
+                    foreach (var actorId in createDto.ActorIds)
+                    {
+                        movie.MovieActors.Add(new MovieActor { ActorId = actorId });
+                    }
                 }
+
+                await _context.Movies.AddAsync(movie);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Movie '{Title}' created successfully with ID {MovieId}", movie.Title, movie.Id);
+
+                // Load detail
+                var savedDetail = await GetMovieByIdAsync(movie.Id);
+
+                // Broadcast SignalR creation event
+                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
+                if (hubContext != null)
+                {
+                    await hubContext.Clients.All.SendAsync("MovieCreated", savedDetail.Data);
+                }
+
+                return savedDetail;
             }
-
-            await _movieRepository.AddAsync(movie);
-            await _movieRepository.SaveChangesAsync();
-
-            // Fetch fully populated movie to return complete detail
-            var savedMovie = await _movieRepository.GetByIdWithDetailsAsync(movie.Id);
-            return _mapper.Map<MovieDetailDto>(savedMovie ?? movie);
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error occurred during movie creation.");
+                throw;
+            }
         }
 
-        public async Task<MovieDetailDto?> UpdateMovieAsync(int id, MovieUpdateDto updateDto)
+        /// <summary>
+        /// Updates an existing movie entity with collision safety and transaction guarantees.
+        /// </summary>
+        public async Task<ApiResponse<MovieDetailDto>> UpdateMovieAsync(int id, MovieUpdateDto updateDto)
         {
-            var movie = await _movieRepository.GetByIdWithDetailsAsync(id);
-            if (movie == null) return null;
+            _logger.LogInformation("Updating movie ID {MovieId}", id);
 
-            // Update slug if Title changed
+            var movie = await _context.Movies
+                .Include(m => m.MovieActors)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (movie == null)
+            {
+                throw new NotFoundException($"Không tìm thấy phim có ID {id} để cập nhật.");
+            }
+
+            // Check if Title is changing to generate a new slug
+            string? newSlug = null;
             if (!movie.Title.Equals(updateDto.Title, StringComparison.OrdinalIgnoreCase))
             {
-                string baseSlug = GenerateSlug(updateDto.Title);
-                string slug = baseSlug;
-                int counter = 1;
-                while (await _movieRepository.GetBySlugAsync(slug) != null)
-                {
-                    slug = $"{baseSlug}-{counter++}";
-                }
-                movie.Slug = slug;
+                newSlug = await _slugService.GenerateUniqueSlugAsync<Movie>(updateDto.Title);
             }
 
-            // Map standard properties
-            _mapper.Map(updateDto, movie);
-            movie.LastModifiedAt = DateTime.UtcNow;
-            movie.LastModifiedBy = "Admin";
+            var currentUsername = _currentUserService.UserName ?? "System";
 
-            // Update Actors list (clear and re-populate)
-            movie.MovieActors.Clear();
-            if (updateDto.ActorIds != null)
+            // Validate using standard create dto validation
+            var createDto = new MovieCreateDto
             {
-                foreach (var actorId in updateDto.ActorIds)
+                Title = updateDto.Title,
+                Description = updateDto.Description,
+                Duration = updateDto.Duration,
+                Language = updateDto.Language,
+                TrailerUrl = updateDto.TrailerUrl,
+                ReleaseDate = updateDto.ReleaseDate,
+                EndDate = updateDto.EndDate,
+                GenreId = updateDto.GenreId,
+                AgeRatingId = updateDto.AgeRatingId,
+                DirectorId = updateDto.DirectorId,
+                IsFeatured = updateDto.IsFeatured,
+                Status = updateDto.Status,
+                ActorIds = updateDto.ActorIds
+            };
+            await ValidateMovieAsync(createDto, id);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _mapper.Map(updateDto, movie);
+                if (newSlug != null)
                 {
-                    movie.MovieActors.Add(new MovieActor { ActorId = actorId });
+                    movie.Slug = newSlug;
                 }
+                movie.LastModifiedAt = DateTime.UtcNow;
+                movie.LastModifiedBy = currentUsername;
+
+                // Optimized Actor Update (Compare difference instead of Clear & Add)
+                await UpdateMovieActorsInternalAsync(movie, updateDto.ActorIds);
+
+                _context.Movies.Update(movie);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Movie ID {MovieId} updated successfully.", id);
+
+                var savedDetail = await GetMovieByIdAsync(id);
+
+                // Broadcast SignalR update event
+                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
+                if (hubContext != null)
+                {
+                    await hubContext.Clients.All.SendAsync("MovieUpdated", savedDetail.Data);
+                }
+
+                return savedDetail;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error occurred during movie update.");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Performs a soft delete on a movie. Throws business exception if movie has active showtimes.
+        /// </summary>
+        public async Task<ApiResponse<bool>> DeleteMovieAsync(int id)
+        {
+            _logger.LogInformation("Soft-deleting movie ID {MovieId}", id);
+
+            var movie = await _context.Movies.FindAsync(id);
+            if (movie == null || movie.IsDeleted)
+            {
+                throw new NotFoundException($"Không tìm thấy phim có ID {id} hoặc phim đã bị ẩn trước đó.");
             }
 
-            _movieRepository.Update(movie);
-            await _movieRepository.SaveChangesAsync();
+            // Business rule: Prevent deletion if movie has future or active showtimes
+            var hasActiveShowtimes = await _context.Showtimes
+                .AnyAsync(s => s.MovieId == id && s.EndTime > DateTime.UtcNow);
+            if (hasActiveShowtimes)
+            {
+                throw new BusinessException("Không thể xóa phim này vì hiện tại đang có lịch chiếu hoạt động trong tương lai.");
+            }
 
-            // Return updated details
-            var updatedMovie = await _movieRepository.GetByIdWithDetailsAsync(id);
-            return _mapper.Map<MovieDetailDto>(updatedMovie ?? movie);
+            var currentUsername = _currentUserService.UserName ?? "System";
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                movie.IsDeleted = true;
+                movie.DeletedAt = DateTime.UtcNow;
+                movie.DeletedBy = currentUsername;
+
+                _context.Movies.Update(movie);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Movie ID {MovieId} has been successfully soft-deleted.", id);
+
+                // Broadcast SignalR deletion event
+                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
+                if (hubContext != null)
+                {
+                    await hubContext.Clients.All.SendAsync("MovieDeleted", id);
+                }
+
+                return ApiResponse.Success(true, "Xóa phim thành công.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error occurred during movie deletion.");
+                throw;
+            }
         }
 
-        public async Task<bool> DeleteMovieAsync(int id, string deletedBy)
+        /// <summary>
+        /// Restores a soft-deleted movie back to active status.
+        /// </summary>
+        public async Task<ApiResponse<bool>> RestoreMovieAsync(int id)
         {
-            var movie = await _movieRepository.GetByIdAsync(id);
-            if (movie == null) return false;
+            _logger.LogInformation("Restoring movie ID {MovieId}", id);
 
-            // Perform Soft Delete
-            movie.IsDeleted = true;
-            movie.DeletedAt = DateTime.UtcNow;
-            movie.DeletedBy = deletedBy;
+            // Fetch bypassing global soft-delete query filter
+            var movie = await _context.Movies
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-            _movieRepository.Update(movie);
-            return await _movieRepository.SaveChangesAsync();
+            if (movie == null || !movie.IsDeleted)
+            {
+                throw new NotFoundException($"Không tìm thấy phim bị ẩn có ID {id}.");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                movie.IsDeleted = false;
+                movie.DeletedAt = null;
+                movie.DeletedBy = null;
+                movie.LastModifiedAt = DateTime.UtcNow;
+                movie.LastModifiedBy = _currentUserService.UserName ?? "System";
+
+                _context.Movies.Update(movie);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Movie ID {MovieId} successfully restored.", id);
+
+                // Broadcast SignalR restore event
+                var savedDetail = await GetMovieByIdAsync(id);
+                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
+                if (hubContext != null)
+                {
+                    await hubContext.Clients.All.SendAsync("MovieCreated", savedDetail.Data);
+                }
+
+                return ApiResponse.Success(true, "Phục hồi phim thành công.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error occurred during movie restoration.");
+                throw;
+            }
         }
 
-        public async Task<bool> UpdateMoviePhotosAsync(int id, string? posterUrl, string? bannerUrl)
+        /// <summary>
+        /// Updates the image paths (poster and/or banner) of the movie.
+        /// </summary>
+        public async Task<ApiResponse<bool>> UpdateMoviePhotosAsync(int id, string? posterUrl, string? bannerUrl)
         {
-            var movie = await _movieRepository.GetByIdAsync(id);
-            if (movie == null) return false;
+            _logger.LogInformation("Updating photos for movie ID {MovieId}", id);
 
-            if (posterUrl != null) movie.PosterUrl = posterUrl;
-            if (bannerUrl != null) movie.BannerUrl = bannerUrl;
+            var movie = await _context.Movies.FindAsync(id);
+            if (movie == null)
+            {
+                throw new NotFoundException($"Không tìm thấy phim có ID {id} để cập nhật hình ảnh.");
+            }
+
+            if (posterUrl != null)
+            {
+                if (!IsValidUrlOrPath(posterUrl))
+                    throw new ValidationException("Đường dẫn ảnh Poster không hợp lệ.");
+                movie.PosterUrl = posterUrl;
+            }
+
+            if (bannerUrl != null)
+            {
+                if (!IsValidUrlOrPath(bannerUrl))
+                    throw new ValidationException("Đường dẫn ảnh Banner không hợp lệ.");
+                movie.BannerUrl = bannerUrl;
+            }
 
             movie.LastModifiedAt = DateTime.UtcNow;
-            movie.LastModifiedBy = "Admin";
+            movie.LastModifiedBy = _currentUserService.UserName ?? "System";
 
-            _movieRepository.Update(movie);
-            return await _movieRepository.SaveChangesAsync();
-        }
+            _context.Movies.Update(movie);
+            var success = await _context.SaveChangesAsync() > 0;
 
-        #region Helper Methods for Slug Generation
-
-        private string GenerateSlug(string title)
-        {
-            string cleanTitle = RemoveAccents(title).ToLowerInvariant();
-            
-            // Remove invalid characters
-            cleanTitle = Regex.Replace(cleanTitle, @"[^a-z0-9\s-]", "");
-            
-            // Collapse multiple spaces into one
-            cleanTitle = Regex.Replace(cleanTitle, @"\s+", " ").Trim();
-            
-            // Limit length to 45 chars
-            cleanTitle = cleanTitle.Substring(0, Math.Min(cleanTitle.Length, 45)).Trim();
-            
-            // Replace spaces with hyphens
-            cleanTitle = Regex.Replace(cleanTitle, @"\s", "-");
-            
-            return cleanTitle;
-        }
-
-        private string RemoveAccents(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return text;
-            
-            var normalizedString = text.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-
-            foreach (var c in normalizedString)
+            if (success)
             {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                // Broadcast change
+                var savedDetail = await GetMovieByIdAsync(id);
+                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
+                if (hubContext != null)
                 {
-                    stringBuilder.Append(c);
+                    await hubContext.Clients.All.SendAsync("MovieUpdated", savedDetail.Data);
                 }
             }
 
-            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+            return ApiResponse.Success(success, "Cập nhật ảnh thành công.");
+        }
+
+        /// <summary>
+        /// Updates movie-actor relationships using optimized diff comparisons.
+        /// </summary>
+        public async Task<ApiResponse<bool>> UpdateMovieActorsAsync(int id, List<int> actorIds)
+        {
+            _logger.LogInformation("Updating actor list for movie ID {MovieId}", id);
+
+            var movie = await _context.Movies
+                .Include(m => m.MovieActors)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (movie == null)
+            {
+                throw new NotFoundException($"Không tìm thấy phim có ID {id}.");
+            }
+
+            // Verify all new actorIds exist
+            var existingActorsCount = await _context.Actors
+                .Where(a => actorIds.Contains(a.ActorId))
+                .CountAsync();
+
+            if (existingActorsCount != actorIds.Distinct().Count())
+            {
+                throw new ValidationException("Một hoặc nhiều Actor ID được truyền lên không tồn tại trong hệ thống.");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await UpdateMovieActorsInternalAsync(movie, actorIds);
+                _context.Movies.Update(movie);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return ApiResponse.Success(true, "Cập nhật danh sách diễn viên thành công.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Helper Validation & Analysis Systems
+
+        /// <summary>
+        /// Validates movie details against core business rules.
+        /// </summary>
+        public async Task<ApiResponse<bool>> ValidateMovieAsync(MovieCreateDto createDto)
+        {
+            return await ValidateMovieAsync(createDto, null);
+        }
+
+        private async Task<ApiResponse<bool>> ValidateMovieAsync(MovieCreateDto createDto, int? excludeMovieId)
+        {
+            if (string.IsNullOrWhiteSpace(createDto.Title))
+            {
+                throw new ValidationException("Tiêu đề phim bắt buộc không được để trống.");
+            }
+
+            if (createDto.Duration <= 0)
+            {
+                throw new ValidationException("Thời lượng phim phải lớn hơn 0 phút.");
+            }
+
+            if (createDto.ReleaseDate >= createDto.EndDate)
+            {
+                throw new ValidationException("Ngày phát hành (ReleaseDate) phải trước ngày kết thúc chiếu (EndDate).");
+            }
+
+            // Unique title validation
+            var isDuplicate = await _context.Movies
+                .AnyAsync(m => m.Title.ToLower() == createDto.Title.ToLower() && m.Id != excludeMovieId && !m.IsDeleted);
+
+            if (isDuplicate)
+            {
+                throw new BusinessException($"Phim có tiêu đề '{createDto.Title}' đã tồn tại trong hệ thống.");
+            }
+
+            // Genre validation
+            var genreExists = await _context.Genres.AnyAsync(g => g.GenreId == createDto.GenreId);
+            if (!genreExists)
+            {
+                throw new ValidationException("Thể loại phim (Genre) được chọn không tồn tại.");
+            }
+
+            // Actors validation
+            if (createDto.ActorIds != null && createDto.ActorIds.Any())
+            {
+                var activeActorsCount = await _context.Actors
+                    .Where(a => createDto.ActorIds.Contains(a.ActorId))
+                    .CountAsync();
+
+                if (activeActorsCount != createDto.ActorIds.Distinct().Count())
+                {
+                    throw new ValidationException("Một hoặc nhiều diễn viên được chọn không hợp lệ.");
+                }
+            }
+
+            return ApiResponse.Success(true);
+        }
+
+        private async Task UpdateMovieActorsInternalAsync(Movie movie, List<int> targetActorIds)
+        {
+            var currentActorIds = movie.MovieActors.Select(ma => ma.ActorId).ToList();
+            var toAdd = targetActorIds.Except(currentActorIds).ToList();
+            var toRemove = currentActorIds.Except(targetActorIds).ToList();
+
+            foreach (var removeId in toRemove)
+            {
+                var ma = movie.MovieActors.First(x => x.ActorId == removeId);
+                movie.MovieActors.Remove(ma);
+            }
+
+            foreach (var addId in toAdd)
+            {
+                movie.MovieActors.Add(new MovieActor { ActorId = addId });
+            }
+
+            await Task.CompletedTask;
+        }
+
+        private async Task<MovieAnalyticsDto> CalculateMovieAnalyticsAsync(int movieId)
+        {
+            var analytics = new MovieAnalyticsDto
+            {
+                MovieId = movieId,
+                Title = string.Empty,
+                BookingCount = 0,
+                Revenue = 0m,
+                RatingAverage = 0.0,
+                OccupancyRate = 0.0
+            };
+
+            var movie = await _context.Movies.FindAsync(movieId);
+            if (movie != null)
+            {
+                analytics.Title = movie.Title;
+
+                // Total bookings
+                analytics.BookingCount = await _context.BookingSeats
+                    .CountAsync(bs => bs.Booking.Showtime.MovieId == movieId && bs.Booking.BookingStatus != "Cancelled");
+
+                // Total revenue
+                analytics.Revenue = await _context.Bookings
+                    .Where(b => b.Showtime.MovieId == movieId && b.BookingStatus == "Confirmed")
+                    .SumAsync(b => b.TotalAmount);
+
+                // Rating average
+                var reviews = await _context.Reviews.Where(r => r.MovieId == movieId).ToListAsync();
+                analytics.RatingAverage = reviews.Any() ? reviews.Average(r => r.Rating) : 0.0;
+
+                // Occupancy rate calculation (booked seats / total capacity across showtimes)
+                var showtimes = await _context.Showtimes.Where(s => s.MovieId == movieId).ToListAsync();
+                if (showtimes.Any())
+                {
+                    var totalCapacity = 0;
+                    foreach (var s in showtimes)
+                    {
+                        var seatsCount = await _context.Seats.CountAsync(st => st.HallId == s.HallId && !st.IsDeleted);
+                        totalCapacity += seatsCount;
+                    }
+
+                    if (totalCapacity > 0)
+                    {
+                        analytics.OccupancyRate = Math.Round((double)analytics.BookingCount / totalCapacity * 100, 2);
+                    }
+                }
+            }
+
+            return analytics;
+        }
+
+        private bool IsValidUrlOrPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            return path.StartsWith("/") || Uri.IsWellFormedUriString(path, UriKind.Absolute);
         }
 
         #endregion

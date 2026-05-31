@@ -19,6 +19,8 @@ namespace CinemaBooking.API.Data.Configurations
             builder.Property(m => m.TrailerUrl).HasMaxLength(500);
             builder.Property(m => m.Description).HasMaxLength(2000);
             builder.Property(m => m.Rating).HasDefaultValue(0.0);
+            builder.Property(m => m.IsFeatured).HasDefaultValue(false);
+            builder.Property(m => m.Status).IsRequired().HasMaxLength(50).HasDefaultValue("NowShowing");
 
             // Index on Slug
             builder.HasIndex(m => m.Slug).IsUnique();

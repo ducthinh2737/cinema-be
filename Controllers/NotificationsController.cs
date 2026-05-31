@@ -36,34 +36,42 @@ namespace CinemaBooking.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("unread-count")]
+        public async Task<IActionResult> GetUnreadCount()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _notificationService.GetUnreadCountAsync(userId);
+            return Ok(result);
+        }
+
         [HttpPut("read/{id:int}")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            var success = await _notificationService.MarkAsReadAsync(id);
-            if (!success)
+            var result = await _notificationService.MarkAsReadAsync(id);
+            if (!result.IsSuccess)
             {
-                return NotFound(new { Message = $"Notification with ID {id} not found." });
+                return NotFound(result);
             }
-            return Ok(new { Message = "Notification marked as read successfully." });
+            return Ok(result);
         }
 
         [HttpPut("read-all")]
         public async Task<IActionResult> MarkAllAsRead()
         {
             var userId = GetCurrentUserId();
-            await _notificationService.MarkAllAsReadAsync(userId);
-            return Ok(new { Message = "All notifications marked as read." });
+            var result = await _notificationService.MarkAllAsReadAsync(userId);
+            return Ok(result);
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteNotification(int id)
         {
-            var success = await _notificationService.DeleteNotificationAsync(id);
-            if (!success)
+            var result = await _notificationService.DeleteNotificationAsync(id);
+            if (!result.IsSuccess)
             {
-                return NotFound(new { Message = $"Notification with ID {id} not found or already deleted." });
+                return NotFound(result);
             }
-            return Ok(new { Message = "Notification has been successfully soft deleted." });
+            return Ok(result);
         }
 
         private int GetCurrentUserId()

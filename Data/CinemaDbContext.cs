@@ -46,11 +46,23 @@ namespace CinemaBooking.API.Data
         public DbSet<UserPromotion> UserPromotions { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+        public DbSet<MovieFormat> MovieFormats { get; set; } = null!;
+        public DbSet<Language> Languages { get; set; } = null!;
+        public DbSet<SubtitleType> SubtitleTypes { get; set; } = null!;
+        public DbSet<AgeRating> AgeRatings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(CinemaDbContext).Assembly);
+
+            // Configure all decimal properties to use decimal(18,2) precision
+            foreach (var property in modelBuilder.Model.GetEntityTypes()
+                .SelectMany(t => t.GetProperties())
+                .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
+            {
+                property.SetColumnType("decimal(18,2)");
+            }
 
             // Call Seeders
             CinemaBooking.API.Data.Seeders.RoleSeeder.Seed(modelBuilder);

@@ -1,12 +1,743 @@
 {
   "Version": 1,
-  "Hash": "592Gukujmx0i+PVUfGaQkFdNzgPDtUnS/hPccdk/f6w=",
+  "Hash": "fj67ad7qYL8IQj7b/yT7BwtFHQyMDYdKk2IdbJ37DiA=",
   "Source": "CinemaBooking.API",
   "BasePath": "_content/CinemaBooking.API",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": [],
-  "Endpoints": []
+  "DiscoveryPatterns": [
+    {
+      "Name": "CinemaBooking.API\\wwwroot",
+      "Source": "CinemaBooking.API",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/avatars/08cec169-1121-4364-b0c2-12695f428ff1#[.{fingerprint}]?.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "203guxn3rr",
+      "Integrity": "zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/avatars/c9e22794-90a4-461e-bf53-8b33a51964b5#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "ql8ko7tbpj",
+      "Integrity": "cnOpSg6Z6jed7P/fgBu+P7HW+r+ykMIsMcOo1GEPHNg=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/banners/19aa1292-d783-4aac-842a-ce1ec1979f71#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "zw9odr87wp",
+      "Integrity": "MwHONOO+2sBK+8r6kgextHVfLkYiJiEJcysUaOMuOmw=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/cinemas/b2d54ea3-e5d4-4443-91f3-8f0bb28135a2#[.{fingerprint}]?.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "203guxn3rr",
+      "Integrity": "zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/posters/2b6df25e-8fac-4038-831b-62b5dc03c626#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "8z28d8n7u8",
+      "Integrity": "FD5kFCpjBet8MycVIlfAf7845csR+1PXY54UjdLQ5bg=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/posters/4c3ab659-1db5-4ff1-932e-81d4f2918249#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "ndi3api49s",
+      "Integrity": "y+091R2tSkhfKEbZzxC/ctJoh/wYWZ4T+RNvZ/RYQco=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg"
+    },
+    {
+      "Identity": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg",
+      "SourceId": "CinemaBooking.API",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\",
+      "BasePath": "_content/CinemaBooking.API",
+      "RelativePath": "uploads/posters/7451a13f-1618-40ce-b2ba-2bdc0ec8298f#[.{fingerprint}]?.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "ekjg6x4c72",
+      "Integrity": "DvF657eIVSRkI6HZnKMqGuzJS8Dv3M6x0UbvzheM0Aw=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg"
+    }
+  ],
+  "Endpoints": [
+    {
+      "Route": "uploads/avatars/08cec169-1121-4364-b0c2-12695f428ff1.203guxn3rr.png",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2138941"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 03:20:01 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "203guxn3rr"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/avatars/08cec169-1121-4364-b0c2-12695f428ff1.png"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/avatars/08cec169-1121-4364-b0c2-12695f428ff1.png",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2138941"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 03:20:01 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/avatars/c9e22794-90a4-461e-bf53-8b33a51964b5.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "150376"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"cnOpSg6Z6jed7P/fgBu+P7HW+r+ykMIsMcOo1GEPHNg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 03:20:09 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-cnOpSg6Z6jed7P/fgBu+P7HW+r+ykMIsMcOo1GEPHNg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/avatars/c9e22794-90a4-461e-bf53-8b33a51964b5.ql8ko7tbpj.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "150376"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"cnOpSg6Z6jed7P/fgBu+P7HW+r+ykMIsMcOo1GEPHNg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 03:20:09 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ql8ko7tbpj"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/avatars/c9e22794-90a4-461e-bf53-8b33a51964b5.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-cnOpSg6Z6jed7P/fgBu+P7HW+r+ykMIsMcOo1GEPHNg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/banners/19aa1292-d783-4aac-842a-ce1ec1979f71.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "31333"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"MwHONOO+2sBK+8r6kgextHVfLkYiJiEJcysUaOMuOmw=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:26:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-MwHONOO+2sBK+8r6kgextHVfLkYiJiEJcysUaOMuOmw="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/banners/19aa1292-d783-4aac-842a-ce1ec1979f71.zw9odr87wp.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "31333"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"MwHONOO+2sBK+8r6kgextHVfLkYiJiEJcysUaOMuOmw=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:26:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "zw9odr87wp"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/banners/19aa1292-d783-4aac-842a-ce1ec1979f71.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-MwHONOO+2sBK+8r6kgextHVfLkYiJiEJcysUaOMuOmw="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/cinemas/b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.203guxn3rr.png",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2138941"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 13:06:37 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "203guxn3rr"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/cinemas/b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/cinemas/b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2138941"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Wed, 27 May 2026 13:06:37 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-zlp4pAwOpvOs5lS1UPVB9anDtVFxOwtPiyud/fEn6to="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/2b6df25e-8fac-4038-831b-62b5dc03c626.8z28d8n7u8.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "33413"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"FD5kFCpjBet8MycVIlfAf7845csR+1PXY54UjdLQ5bg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:21:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "8z28d8n7u8"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/posters/2b6df25e-8fac-4038-831b-62b5dc03c626.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-FD5kFCpjBet8MycVIlfAf7845csR+1PXY54UjdLQ5bg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/2b6df25e-8fac-4038-831b-62b5dc03c626.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "33413"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"FD5kFCpjBet8MycVIlfAf7845csR+1PXY54UjdLQ5bg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:21:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-FD5kFCpjBet8MycVIlfAf7845csR+1PXY54UjdLQ5bg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "35503"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"y+091R2tSkhfKEbZzxC/ctJoh/wYWZ4T+RNvZ/RYQco=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:32:38 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-y+091R2tSkhfKEbZzxC/ctJoh/wYWZ4T+RNvZ/RYQco="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/4c3ab659-1db5-4ff1-932e-81d4f2918249.ndi3api49s.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "35503"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"y+091R2tSkhfKEbZzxC/ctJoh/wYWZ4T+RNvZ/RYQco=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 06:32:38 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ndi3api49s"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/posters/4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-y+091R2tSkhfKEbZzxC/ctJoh/wYWZ4T+RNvZ/RYQco="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/7451a13f-1618-40ce-b2ba-2bdc0ec8298f.ekjg6x4c72.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "73189"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"DvF657eIVSRkI6HZnKMqGuzJS8Dv3M6x0UbvzheM0Aw=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 05:18:31 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ekjg6x4c72"
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/posters/7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-DvF657eIVSRkI6HZnKMqGuzJS8Dv3M6x0UbvzheM0Aw="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/posters/7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg",
+      "AssetFile": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "73189"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"DvF657eIVSRkI6HZnKMqGuzJS8Dv3M6x0UbvzheM0Aw=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 30 May 2026 05:18:31 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-DvF657eIVSRkI6HZnKMqGuzJS8Dv3M6x0UbvzheM0Aw="
+        }
+      ]
+    }
+  ]
 }

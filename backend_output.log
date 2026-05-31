@@ -1,0 +1,268 @@
+Using launch settings from Properties\launchSettings.json...
+Building...
+C:\Users\ADMIN\Downloads\cinema\cinema\CinemaBooking.API.csproj : warning NU1903: Package 'AutoMapper' 13.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-rvv3-g6hj-g44x
+C:\Users\ADMIN\Downloads\cinema\cinema\CinemaBooking.API.csproj : warning NU1903: Package 'AutoMapper' 13.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-rvv3-g6hj-g44x
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Seat' has a global query filter defined and is the required end of a relationship with the entity 'BookingSeat'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Movie' has a global query filter defined and is the required end of a relationship with the entity 'MovieActor'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Promotion' has a global query filter defined and is the required end of a relationship with the entity 'UserPromotion'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Hall' has a global query filter defined and is the required end of a relationship with the entity 'Showtime'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (23ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (15ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (15ms) [Parameters=[@__typeName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [HallTypes] AS [h]
+              WHERE [h].[TypeName] = @__typeName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__typeName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [HallTypes] AS [h]
+              WHERE [h].[TypeName] = @__typeName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__typeName_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [HallTypes] AS [h]
+              WHERE [h].[TypeName] = @__typeName_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [h].[HallTypeId], [h].[CreatedAt], [h].[CreatedBy], [h].[DeletedAt], [h].[DeletedBy], [h].[IsDeleted], [h].[LastModifiedAt], [h].[LastModifiedBy], [h].[TypeName]
+      FROM [HallTypes] AS [h]
+      WHERE [h].[TypeName] = N'Standard'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [h].[HallTypeId], [h].[CreatedAt], [h].[CreatedBy], [h].[DeletedAt], [h].[DeletedBy], [h].[IsDeleted], [h].[LastModifiedAt], [h].[LastModifiedBy], [h].[TypeName]
+      FROM [HallTypes] AS [h]
+      WHERE [h].[TypeName] = N'VIP'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [h].[HallTypeId], [h].[CreatedAt], [h].[CreatedBy], [h].[DeletedAt], [h].[DeletedBy], [h].[IsDeleted], [h].[LastModifiedAt], [h].[LastModifiedBy], [h].[TypeName]
+      FROM [HallTypes] AS [h]
+      WHERE [h].[TypeName] = N'IMAX'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Halls] AS [h]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__seatType_Item1_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [SeatTypes] AS [s]
+              WHERE [s].[TypeName] = @__seatType_Item1_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__seatType_Item1_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [SeatTypes] AS [s]
+              WHERE [s].[TypeName] = @__seatType_Item1_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__seatType_Item1_0='?' (Size = 50)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [SeatTypes] AS [s]
+              WHERE [s].[TypeName] = @__seatType_Item1_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[SeatTypeId], [s].[CreatedAt], [s].[CreatedBy], [s].[DeletedAt], [s].[DeletedBy], [s].[IsDeleted], [s].[LastModifiedAt], [s].[LastModifiedBy], [s].[PriceMultiplier], [s].[TypeName]
+      FROM [SeatTypes] AS [s]
+      WHERE [s].[TypeName] = N'Standard'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[SeatTypeId], [s].[CreatedAt], [s].[CreatedBy], [s].[DeletedAt], [s].[DeletedBy], [s].[IsDeleted], [s].[LastModifiedAt], [s].[LastModifiedBy], [s].[PriceMultiplier], [s].[TypeName]
+      FROM [SeatTypes] AS [s]
+      WHERE [s].[TypeName] = N'VIP'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[SeatTypeId], [s].[CreatedAt], [s].[CreatedBy], [s].[DeletedAt], [s].[DeletedBy], [s].[IsDeleted], [s].[LastModifiedAt], [s].[LastModifiedBy], [s].[PriceMultiplier], [s].[TypeName]
+      FROM [SeatTypes] AS [s]
+      WHERE [s].[TypeName] = N'Sweetbox'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Seats] AS [s]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__price_Item2_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Prices] AS [p]
+              WHERE [p].[TicketType] = @__price_Item2_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__price_Item2_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Prices] AS [p]
+              WHERE [p].[TicketType] = @__price_Item2_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__price_Item2_0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Prices] AS [p]
+              WHERE [p].[TicketType] = @__price_Item2_0) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[PriceId], [p].[TicketType], [p].[Value]
+      FROM [Prices] AS [p]
+      WHERE [p].[TicketType] = N'Standard Weekday'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[PriceId], [p].[TicketType], [p].[Value]
+      FROM [Prices] AS [p]
+      WHERE [p].[TicketType] = N'VIP Weekday'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [p].[PriceId], [p].[TicketType], [p].[Value]
+      FROM [Prices] AS [p]
+      WHERE [p].[TicketType] = N'Blockbuster Weekend'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Movies] AS [m]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [m].[MovieId], [m].[AgeRatingId], [m].[BannerUrl], [m].[CreatedAt], [m].[CreatedBy], [m].[DeletedAt], [m].[DeletedBy], [m].[Description], [m].[DirectorId], [m].[Duration], [m].[EndDate], [m].[GenreId], [m].[IsDeleted], [m].[Language], [m].[LastModifiedAt], [m].[LastModifiedBy], [m].[PosterUrl], [m].[Rating], [m].[ReleaseDate], [m].[Slug], [m].[Title], [m].[TrailerUrl]
+      FROM [Movies] AS [m]
+      WHERE [m].[Slug] = N'doctor-strange-multiverse-madness'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [m].[MovieId], [m].[AgeRatingId], [m].[BannerUrl], [m].[CreatedAt], [m].[CreatedBy], [m].[DeletedAt], [m].[DeletedBy], [m].[Description], [m].[DirectorId], [m].[Duration], [m].[EndDate], [m].[GenreId], [m].[IsDeleted], [m].[Language], [m].[LastModifiedAt], [m].[LastModifiedBy], [m].[PosterUrl], [m].[Rating], [m].[ReleaseDate], [m].[Slug], [m].[Title], [m].[TrailerUrl]
+      FROM [Movies] AS [m]
+      WHERE [m].[Slug] = N'spider-man-no-way-home'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [m].[MovieId], [m].[AgeRatingId], [m].[BannerUrl], [m].[CreatedAt], [m].[CreatedBy], [m].[DeletedAt], [m].[DeletedBy], [m].[Description], [m].[DirectorId], [m].[Duration], [m].[EndDate], [m].[GenreId], [m].[IsDeleted], [m].[Language], [m].[LastModifiedAt], [m].[LastModifiedBy], [m].[PosterUrl], [m].[Rating], [m].[ReleaseDate], [m].[Slug], [m].[Title], [m].[TrailerUrl]
+      FROM [Movies] AS [m]
+      WHERE [m].[Slug] = N'top-gun-maverick'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [m].[MovieId], [m].[AgeRatingId], [m].[BannerUrl], [m].[CreatedAt], [m].[CreatedBy], [m].[DeletedAt], [m].[DeletedBy], [m].[Description], [m].[DirectorId], [m].[Duration], [m].[EndDate], [m].[GenreId], [m].[IsDeleted], [m].[Language], [m].[LastModifiedAt], [m].[LastModifiedBy], [m].[PosterUrl], [m].[Rating], [m].[ReleaseDate], [m].[Slug], [m].[Title], [m].[TrailerUrl]
+      FROM [Movies] AS [m]
+      WHERE [m].[Slug] = N'the-batman'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [m].[MovieId], [m].[AgeRatingId], [m].[BannerUrl], [m].[CreatedAt], [m].[CreatedBy], [m].[DeletedAt], [m].[DeletedBy], [m].[Description], [m].[DirectorId], [m].[Duration], [m].[EndDate], [m].[GenreId], [m].[IsDeleted], [m].[Language], [m].[LastModifiedAt], [m].[LastModifiedBy], [m].[PosterUrl], [m].[Rating], [m].[ReleaseDate], [m].[Slug], [m].[Title], [m].[TrailerUrl]
+      FROM [Movies] AS [m]
+      WHERE [m].[Slug] = N'avatar-way-of-water'
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Showtimes] AS [s]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Users] AS [u]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Promotions] AS [p]) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: CinemaBooking.API.BackgroundServices.BookingExpirationService[0]
+      Booking Expiration Background Service is starting.
+info: CinemaBooking.API.Services.Implementations.BookingService[0]
+      Scanning for expired pending bookings created before 05/30/2026 05:17:03
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (17ms) [Parameters=[@__threshold_0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT [b].[BookingId], [b].[BookingCode], [b].[BookingStatus], [b].[CreatedAt], [b].[DiscountAmount], [b].[QRCodeUrl], [b].[RowVersion], [b].[ServiceFee], [b].[ShowtimeId], [b].[TotalAmount], [b].[UserId], [b0].[BookingSeatId], [b0].[BookingId], [b0].[SeatId], [b0].[UnitPrice]
+      FROM [Bookings] AS [b]
+      LEFT JOIN [BookingSeats] AS [b0] ON [b].[BookingId] = [b0].[BookingId]
+      WHERE [b].[BookingStatus] = N'Pending' AND [b].[CreatedAt] < @__threshold_0
+      ORDER BY [b].[BookingId]
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5156
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\ADMIN\Downloads\cinema\cinema
+info: CinemaBooking.API.Services.Implementations.BookingService[0]
+      Scanning for expired pending bookings created before 05/30/2026 05:17:33
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__threshold_0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT [b].[BookingId], [b].[BookingCode], [b].[BookingStatus], [b].[CreatedAt], [b].[DiscountAmount], [b].[QRCodeUrl], [b].[RowVersion], [b].[ServiceFee], [b].[ShowtimeId], [b].[TotalAmount], [b].[UserId], [b0].[BookingSeatId], [b0].[BookingId], [b0].[SeatId], [b0].[UnitPrice]
+      FROM [Bookings] AS [b]
+      LEFT JOIN [BookingSeats] AS [b0] ON [b].[BookingId] = [b0].[BookingId]
+      WHERE [b].[BookingStatus] = N'Pending' AND [b].[CreatedAt] < @__threshold_0
+      ORDER BY [b].[BookingId]
+info: CinemaBooking.API.Services.Implementations.BookingService[0]
+      Scanning for expired pending bookings created before 05/30/2026 05:18:03
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__threshold_0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT [b].[BookingId], [b].[BookingCode], [b].[BookingStatus], [b].[CreatedAt], [b].[DiscountAmount], [b].[QRCodeUrl], [b].[RowVersion], [b].[ServiceFee], [b].[ShowtimeId], [b].[TotalAmount], [b].[UserId], [b0].[BookingSeatId], [b0].[BookingId], [b0].[SeatId], [b0].[UnitPrice]
+      FROM [Bookings] AS [b]
+      LEFT JOIN [BookingSeats] AS [b0] ON [b].[BookingId] = [b0].[BookingId]
+      WHERE [b].[BookingStatus] = N'Pending' AND [b].[CreatedAt] < @__threshold_0
+      ORDER BY [b].[BookingId]
+info: CinemaBooking.API.Services.Implementations.BookingService[0]
+      Scanning for expired pending bookings created before 05/30/2026 05:18:33
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__threshold_0='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SELECT [b].[BookingId], [b].[BookingCode], [b].[BookingStatus], [b].[CreatedAt], [b].[DiscountAmount], [b].[QRCodeUrl], [b].[RowVersion], [b].[ServiceFee], [b].[ShowtimeId], [b].[TotalAmount], [b].[UserId], [b0].[BookingSeatId], [b0].[BookingId], [b0].[SeatId], [b0].[UnitPrice]
+      FROM [Bookings] AS [b]
+      LEFT JOIN [BookingSeats] AS [b0] ON [b].[BookingId] = [b0].[BookingId]
+      WHERE [b].[BookingStatus] = N'Pending' AND [b].[CreatedAt] < @__threshold_0
+      ORDER BY [b].[BookingId]

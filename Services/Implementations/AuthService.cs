@@ -61,6 +61,7 @@ namespace CinemaBooking.API.Services.Implementations
 
             return new AuthResponse
             {
+                UserId = createdUser.UserId,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken.Token,
                 ExpiresAt = expiresAt,
@@ -92,6 +93,7 @@ namespace CinemaBooking.API.Services.Implementations
 
             return new AuthResponse
             {
+                UserId = user.UserId,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken.Token,
                 ExpiresAt = expiresAt,
@@ -131,6 +133,7 @@ namespace CinemaBooking.API.Services.Implementations
 
             return new AuthResponse
             {
+                UserId = user.UserId,
                 AccessToken = accessToken,
                 RefreshToken = newRefreshToken.Token,
                 ExpiresAt = expiresAt,

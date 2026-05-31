@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,31 +19,59 @@ namespace CinemaBooking.API.Controllers
         }
 
         [HttpGet("dashboard")]
-        public async Task<IActionResult> GetDashboardSummary()
+        public async Task<IActionResult> GetDashboardSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
-            var summary = await _dashboardService.GetDashboardSummaryAsync();
-            return Ok(summary);
+            var result = await _dashboardService.GetDashboardSummaryAsync(from, to);
+            return Ok(result);
         }
 
         [HttpGet("revenue")]
-        public async Task<IActionResult> GetRevenueStatistics()
+        public async Task<IActionResult> GetRevenueStatistics([FromQuery] DateTime? from, [FromQuery] DateTime? to)
         {
-            var revenue = await _dashboardService.GetRevenueStatisticsAsync();
-            return Ok(revenue);
+            var result = await _dashboardService.GetRevenueStatisticsAsync(from, to);
+            return Ok(result);
         }
 
         [HttpGet("top-movies")]
-        public async Task<IActionResult> GetTopMovies([FromQuery] int limit = 5)
+        public async Task<IActionResult> GetTopMovies([FromQuery] int limit = 5, [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
-            var topMovies = await _dashboardService.GetTopMoviesAsync(limit);
-            return Ok(topMovies);
+            var result = await _dashboardService.GetTopMoviesAsync(limit, from, to);
+            return Ok(result);
+        }
+
+        [HttpGet("top-cinemas")]
+        public async Task<IActionResult> GetTopCinemas([FromQuery] int limit = 5, [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
+        {
+            var result = await _dashboardService.GetTopCinemasAsync(limit, from, to);
+            return Ok(result);
         }
 
         [HttpGet("statistics")]
         public async Task<IActionResult> GetGeneralStatistics()
         {
-            var statistics = await _dashboardService.GetGeneralStatisticsAsync();
-            return Ok(statistics);
+            var result = await _dashboardService.GetGeneralStatisticsAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("revenue-chart")]
+        public async Task<IActionResult> GetRevenueChart([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _dashboardService.GetRevenueChartAsync(from, to);
+            return Ok(result);
+        }
+
+        [HttpGet("bookings-analytics")]
+        public async Task<IActionResult> GetBookingAnalytics([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _dashboardService.GetBookingAnalyticsAsync(from, to);
+            return Ok(result);
+        }
+
+        [HttpGet("occupancy-rate")]
+        public async Task<IActionResult> GetOccupancyRate([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        {
+            var result = await _dashboardService.GetOccupancyRateAsync(from, to);
+            return Ok(result);
         }
     }
 }

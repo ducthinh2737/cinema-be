@@ -215,7 +215,7 @@ namespace CinemaBooking.API.Migrations
                             Address = "123 Le Loi",
                             CinemaName = "Cinema Center District 1",
                             CityId = 1,
-                            CreatedAt = new DateTime(2026, 5, 26, 12, 12, 24, 440, DateTimeKind.Utc).AddTicks(8662),
+                            CreatedAt = new DateTime(2026, 5, 31, 5, 42, 10, 357, DateTimeKind.Utc).AddTicks(2452),
                             IsDeleted = false
                         },
                         new
@@ -224,7 +224,7 @@ namespace CinemaBooking.API.Migrations
                             Address = "456 Nguyen Trai",
                             CinemaName = "Cinema Center Dong Da",
                             CityId = 2,
-                            CreatedAt = new DateTime(2026, 5, 26, 12, 12, 24, 440, DateTimeKind.Utc).AddTicks(8665),
+                            CreatedAt = new DateTime(2026, 5, 31, 5, 42, 10, 357, DateTimeKind.Utc).AddTicks(2455),
                             IsDeleted = false
                         });
                 });
@@ -327,6 +327,9 @@ namespace CinemaBooking.API.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -415,6 +418,9 @@ namespace CinemaBooking.API.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -484,6 +490,47 @@ namespace CinemaBooking.API.Migrations
                     b.ToTable("Actors");
                 });
 
+            modelBuilder.Entity("CinemaBooking.API.Models.Movies.AgeRating", b =>
+                {
+                    b.Property<int>("AgeRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AgeRatingId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RatingCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("AgeRatingId");
+
+                    b.ToTable("AgeRatings");
+                });
+
             modelBuilder.Entity("CinemaBooking.API.Models.Movies.Director", b =>
                 {
                     b.Property<int>("DirectorId")
@@ -509,8 +556,32 @@ namespace CinemaBooking.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GenreId"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("GenreName")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("GenreId");
@@ -521,18 +592,65 @@ namespace CinemaBooking.API.Migrations
                         new
                         {
                             GenreId = 1,
-                            GenreName = "Action"
+                            CreatedAt = new DateTime(2026, 5, 31, 5, 42, 10, 357, DateTimeKind.Utc).AddTicks(2361),
+                            GenreName = "Action",
+                            IsDeleted = false
                         },
                         new
                         {
                             GenreId = 2,
-                            GenreName = "Comedy"
+                            CreatedAt = new DateTime(2026, 5, 31, 5, 42, 10, 357, DateTimeKind.Utc).AddTicks(2405),
+                            GenreName = "Comedy",
+                            IsDeleted = false
                         },
                         new
                         {
                             GenreId = 3,
-                            GenreName = "Drama"
+                            CreatedAt = new DateTime(2026, 5, 31, 5, 42, 10, 357, DateTimeKind.Utc).AddTicks(2406),
+                            GenreName = "Drama",
+                            IsDeleted = false
                         });
+                });
+
+            modelBuilder.Entity("CinemaBooking.API.Models.Movies.Language", b =>
+                {
+                    b.Property<int>("LanguageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LanguageId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LanguageName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("LanguageId");
+
+                    b.ToTable("Languages");
                 });
 
             modelBuilder.Entity("CinemaBooking.API.Models.Movies.Movie", b =>
@@ -582,6 +700,11 @@ namespace CinemaBooking.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsFeatured")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -609,6 +732,13 @@ namespace CinemaBooking.API.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("NowShowing");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -654,6 +784,47 @@ namespace CinemaBooking.API.Migrations
                     b.ToTable("MovieActors");
                 });
 
+            modelBuilder.Entity("CinemaBooking.API.Models.Movies.MovieFormat", b =>
+                {
+                    b.Property<int>("MovieFormatId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MovieFormatId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FormatName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MovieFormatId");
+
+                    b.ToTable("MovieFormats");
+                });
+
             modelBuilder.Entity("CinemaBooking.API.Models.Movies.Review", b =>
                 {
                     b.Property<int>("ReviewId")
@@ -695,6 +866,47 @@ namespace CinemaBooking.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("CinemaBooking.API.Models.Movies.SubtitleType", b =>
+                {
+                    b.Property<int>("SubtitleTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SubtitleTypeId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubtitleTypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("SubtitleTypeId");
+
+                    b.ToTable("SubtitleTypes");
                 });
 
             modelBuilder.Entity("CinemaBooking.API.Models.Notifications.Notification", b =>

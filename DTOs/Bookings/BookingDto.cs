@@ -23,11 +23,17 @@ namespace CinemaBooking.API.DTOs.Bookings
         public List<string> Seats { get; set; } = new();
     }
 
+    public class BookingResponseDto : BookingDto
+    {
+        public string? PaymentUrl { get; set; }
+    }
+
     public class BookingCreateDto
     {
         public int ShowtimeId { get; set; }
         public List<int> SeatIds { get; set; } = new();
         public string? PromoCode { get; set; }
+        public string? SessionId { get; set; }
     }
 
     public class BookingConfirmDto

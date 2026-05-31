@@ -143,3 +143,11 @@ C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\zh-Hans\Microsoft.CodeAn
 C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
 C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\BCrypt-Net-Next.dll
 C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\ADMIN\Downloads\cinema\cinema\obj\Debug\net8.0\CinemaBooking.API.sourcelink.json
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\swagger_spec.json
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\swagger_spec_utf8.json
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\CinemaBooking.API.staticwebassets.runtime.json
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\QRCoder.dll
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\Pipelines.Sockets.Unofficial.dll
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\StackExchange.Redis.dll
+C:\Users\ADMIN\Downloads\cinema\cinema\bin\Debug\net8.0\System.IO.Hashing.dll

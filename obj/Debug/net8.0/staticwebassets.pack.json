@@ -1,0 +1,53 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png",
+      "PackagePath": "staticwebassets\\uploads\\avatars\\08cec169-1121-4364-b0c2-12695f428ff1.png"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg",
+      "PackagePath": "staticwebassets\\uploads\\avatars\\c9e22794-90a4-461e-bf53-8b33a51964b5.jpg"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg",
+      "PackagePath": "staticwebassets\\uploads\\banners\\19aa1292-d783-4aac-842a-ce1ec1979f71.jpg"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png",
+      "PackagePath": "staticwebassets\\uploads\\cinemas\\b2d54ea3-e5d4-4443-91f3-8f0bb28135a2.png"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg",
+      "PackagePath": "staticwebassets\\uploads\\posters\\2b6df25e-8fac-4038-831b-62b5dc03c626.jpg"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg",
+      "PackagePath": "staticwebassets\\uploads\\posters\\4c3ab659-1db5-4ff1-932e-81d4f2918249.jpg"
+    },
+    {
+      "Id": "C:\\Users\\ADMIN\\Downloads\\cinema\\cinema\\wwwroot\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg",
+      "PackagePath": "staticwebassets\\uploads\\posters\\7451a13f-1618-40ce-b2ba-2bdc0ec8298f.jpg"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.CinemaBooking.API.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.CinemaBooking.API.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.CinemaBooking.API.props",
+      "PackagePath": "build\\CinemaBooking.API.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.CinemaBooking.API.props",
+      "PackagePath": "buildMultiTargeting\\CinemaBooking.API.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.CinemaBooking.API.props",
+      "PackagePath": "buildTransitive\\CinemaBooking.API.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

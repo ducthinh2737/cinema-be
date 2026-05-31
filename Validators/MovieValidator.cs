@@ -33,6 +33,11 @@ namespace CinemaBooking.API.Validators
 
             RuleFor(x => x.AgeRatingId)
                 .GreaterThan(0).WithMessage("Valid Age Rating is required.");
+
+            RuleFor(x => x.Status)
+                .NotEmpty().WithMessage("Status is required.")
+                .Must(status => new[] { "NowShowing", "ComingSoon", "Ended", "Hidden" }.Contains(status))
+                .WithMessage("Status must be one of: NowShowing, ComingSoon, Ended, Hidden.");
         }
     }
 
@@ -66,6 +71,11 @@ namespace CinemaBooking.API.Validators
 
             RuleFor(x => x.AgeRatingId)
                 .GreaterThan(0).WithMessage("Valid Age Rating is required.");
+
+            RuleFor(x => x.Status)
+                .NotEmpty().WithMessage("Status is required.")
+                .Must(status => new[] { "NowShowing", "ComingSoon", "Ended", "Hidden" }.Contains(status))
+                .WithMessage("Status must be one of: NowShowing, ComingSoon, Ended, Hidden.");
         }
     }
 }

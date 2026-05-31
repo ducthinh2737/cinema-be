@@ -98,6 +98,14 @@
               "target": "Package",
               "version": "[8.0.0, )"
             },
+            "QRCoder": {
+              "target": "Package",
+              "version": "[1.8.0, )"
+            },
+            "StackExchange.Redis": {
+              "target": "Package",
+              "version": "[2.13.17, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"

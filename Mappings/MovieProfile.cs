@@ -15,7 +15,14 @@ namespace CinemaBooking.API.Mappings
             CreateMap<Movie, MovieDetailDto>()
                 .ForMember(dest => dest.GenreName, opt => opt.MapFrom(src => src.Genre != null ? src.Genre.GenreName : string.Empty))
                 .ForMember(dest => dest.DirectorName, opt => opt.MapFrom(src => src.Director != null ? src.Director.FullName : string.Empty))
-                .ForMember(dest => dest.Actors, opt => opt.MapFrom(src => src.MovieActors));
+                .ForMember(dest => dest.Actors, opt => opt.MapFrom(src => src.MovieActors))
+                .ForMember(dest => dest.Analytics, opt => opt.Ignore());
+
+            CreateMap<Movie, MovieCardDto>()
+                .ForMember(dest => dest.GenreName, opt => opt.MapFrom(src => src.Genre != null ? src.Genre.GenreName : string.Empty));
+
+            CreateMap<Movie, MovieListDto>()
+                .ForMember(dest => dest.GenreName, opt => opt.MapFrom(src => src.Genre != null ? src.Genre.GenreName : string.Empty));
 
             CreateMap<MovieActor, MovieActorDto>()
                 .ForMember(dest => dest.ActorId, opt => opt.MapFrom(src => src.ActorId))

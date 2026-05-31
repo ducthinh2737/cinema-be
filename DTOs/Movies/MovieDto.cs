@@ -22,11 +22,51 @@ namespace CinemaBooking.API.DTOs.Movies
         public int AgeRatingId { get; set; }
         public int? DirectorId { get; set; }
         public string? DirectorName { get; set; }
+        public string Status { get; set; } = null!;
+        public bool IsFeatured { get; set; }
+    }
+
+    public class MovieCardDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = null!;
+        public string Slug { get; set; } = null!;
+        public string? PosterUrl { get; set; }
+        public int Duration { get; set; }
+        public double Rating { get; set; }
+        public string GenreName { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public bool IsFeatured { get; set; }
+    }
+
+    public class MovieListDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = null!;
+        public string Slug { get; set; } = null!;
+        public string? PosterUrl { get; set; }
+        public int Duration { get; set; }
+        public DateTime ReleaseDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string GenreName { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public bool IsFeatured { get; set; }
+    }
+
+    public class MovieAnalyticsDto
+    {
+        public int MovieId { get; set; }
+        public string Title { get; set; } = null!;
+        public int BookingCount { get; set; }
+        public decimal Revenue { get; set; }
+        public double RatingAverage { get; set; }
+        public double OccupancyRate { get; set; }
     }
 
     public class MovieDetailDto : MovieDto
     {
         public List<MovieActorDto> Actors { get; set; } = new();
+        public MovieAnalyticsDto? Analytics { get; set; }
     }
 
     public class MovieActorDto
@@ -47,6 +87,8 @@ namespace CinemaBooking.API.DTOs.Movies
         public int GenreId { get; set; }
         public int AgeRatingId { get; set; }
         public int? DirectorId { get; set; }
+        public bool IsFeatured { get; set; }
+        public string Status { get; set; } = "NowShowing";
         public List<int> ActorIds { get; set; } = new();
     }
 
@@ -62,6 +104,8 @@ namespace CinemaBooking.API.DTOs.Movies
         public int GenreId { get; set; }
         public int AgeRatingId { get; set; }
         public int? DirectorId { get; set; }
+        public bool IsFeatured { get; set; }
+        public string Status { get; set; } = "NowShowing";
         public List<int> ActorIds { get; set; } = new();
     }
 
@@ -80,8 +124,12 @@ namespace CinemaBooking.API.DTOs.Movies
         public string? SearchTerm { get; set; }
         public int? GenreId { get; set; }
         
-        // Filter options: "showing", "upcoming", or null (all)
-        public string? Status { get; set; } 
+        // Filter options: "NowShowing", "ComingSoon", "Ended", "Hidden"
+        public string? Status { get; set; }
+        public int? ReleaseYear { get; set; }
+        public string? SortBy { get; set; }
+        public bool IsDescending { get; set; }
+        public bool IncludeDeleted { get; set; } = false;
     }
 
     public class PagedResultDto<T>

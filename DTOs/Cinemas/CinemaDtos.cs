@@ -69,6 +69,8 @@ namespace CinemaBooking.API.DTOs.Cinemas
         public int SeatTypeId { get; set; }
         public string? SeatTypeName { get; set; }
         public decimal PriceMultiplier { get; set; }
+        public string RowName { get; set; } = null!;
+        public int SeatNumber { get; set; }
     }
 
     public class SeatCreateDto
@@ -84,21 +86,26 @@ namespace CinemaBooking.API.DTOs.Cinemas
         public int SeatTypeId { get; set; }
     }
 
-    // HallType DTOs
     public class HallTypeDto
     {
         public int HallTypeId { get; set; }
         public string TypeName { get; set; } = null!;
+        public string? Description { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class HallTypeCreateDto
     {
         public string TypeName { get; set; } = null!;
+        public string? Description { get; set; }
     }
 
     public class HallTypeUpdateDto
     {
         public string TypeName { get; set; } = null!;
+        public string? Description { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     // SeatType DTOs
@@ -107,17 +114,24 @@ namespace CinemaBooking.API.DTOs.Cinemas
         public int SeatTypeId { get; set; }
         public string TypeName { get; set; } = null!;
         public decimal PriceMultiplier { get; set; }
+        public string? Description { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class SeatTypeCreateDto
     {
         public string TypeName { get; set; } = null!;
         public decimal PriceMultiplier { get; set; }
+        public string? Description { get; set; }
     }
 
     public class SeatTypeUpdateDto
     {
         public string TypeName { get; set; } = null!;
         public decimal PriceMultiplier { get; set; }
+        public string? Description { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }
+

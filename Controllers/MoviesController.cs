@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -37,23 +36,37 @@ namespace CinemaBooking.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetMovieById(int id)
         {
-            var movie = await _movieService.GetMovieByIdAsync(id);
-            if (movie == null)
+            try
             {
-                return NotFound(new { Message = $"Movie with ID {id} not found." });
+                var result = await _movieService.GetMovieByIdAsync(id);
+                return Ok(result);
             }
-            return Ok(movie);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
         }
 
         [HttpGet("slug/{slug}")]
         public async Task<IActionResult> GetMovieBySlug(string slug)
         {
-            var movie = await _movieService.GetMovieBySlugAsync(slug);
-            if (movie == null)
+            try
             {
-                return NotFound(new { Message = $"Movie with slug '{slug}' not found." });
+                var result = await _movieService.GetMovieBySlugAsync(slug);
+                return Ok(result);
             }
-            return Ok(movie);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
         }
 
         [HttpPost]
@@ -61,12 +74,20 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var movie = await _movieService.CreateMovieAsync(createDto);
-                return CreatedAtAction(nameof(GetMovieById), new { id = movie.Id }, movie);
+                var result = await _movieService.CreateMovieAsync(createDto);
+                return CreatedAtAction(nameof(GetMovieById), new { id = result.Data.Id }, result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ApiResponse.Fail<MovieDetailDto>(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.InnerException?.Message ?? ex.Message });
+                return StatusCode(500, ApiResponse.Fail<MovieDetailDto>(ex.Message));
             }
         }
 
@@ -75,29 +96,65 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var movie = await _movieService.UpdateMovieAsync(id, updateDto);
-                if (movie == null)
-                {
-                    return NotFound(new { Message = $"Movie with ID {id} not found." });
-                }
-                return Ok(movie);
+                var result = await _movieService.UpdateMovieAsync(id, updateDto);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.Fail<MovieDetailDto>(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ApiResponse.Fail<MovieDetailDto>(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.InnerException?.Message ?? ex.Message });
+                return StatusCode(500, ApiResponse.Fail<MovieDetailDto>(ex.Message));
             }
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteMovie(int id)
         {
-            var deletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Admin";
-            var success = await _movieService.DeleteMovieAsync(id, deletedBy);
-            if (!success)
+            try
             {
-                return NotFound(new { Message = $"Movie with ID {id} not found or already deleted." });
+                var result = await _movieService.DeleteMovieAsync(id);
+                return Ok(result);
             }
-            return Ok(new { Message = "Movie has been successfully soft deleted." });
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail<bool>(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse.Fail<bool>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail<bool>(ex.Message));
+            }
+        }
+
+        [HttpPost("{id:int}/restore")]
+        public async Task<IActionResult> RestoreMovie(int id)
+        {
+            try
+            {
+                var result = await _movieService.RestoreMovieAsync(id);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail<bool>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail<bool>(ex.Message));
+            }
         }
 
         [HttpPost("{id:int}/upload-poster")]
@@ -116,52 +173,48 @@ namespace CinemaBooking.API.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { Message = "No file uploaded." });
+                return BadRequest(ApiResponse.Fail<string>("No file uploaded."));
             }
 
             if (file.Length > MaxFileBytes)
             {
-                return BadRequest(new { Message = "File size exceeds limit of 5 MB." });
+                return BadRequest(ApiResponse.Fail<string>("File size exceeds limit of 5 MB."));
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!_allowedExtensions.Contains(extension))
             {
-                return BadRequest(new { Message = $"Invalid file format. Allowed formats: {string.Join(", ", _allowedExtensions)}" });
+                return BadRequest(ApiResponse.Fail<string>($"Invalid file format. Allowed formats: {string.Join(", ", _allowedExtensions)}"));
             }
 
-            // Create directories if they do not exist
             var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", folderName);
             if (!Directory.Exists(uploadsFolder))
             {
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            // Generate unique filename
             var fileName = $"{Guid.NewGuid()}{extension}";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
-            // Save to disk
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
-            // Update in database (relative URL)
             var fileUrl = $"/uploads/{folderName}/{fileName}";
-            var success = await _movieService.UpdateMoviePhotosAsync(id, isPoster ? fileUrl : null, isPoster ? null : fileUrl);
-
-            if (!success)
+            try
             {
-                // Clean up file if db save failed
+                var result = await _movieService.UpdateMoviePhotosAsync(id, isPoster ? fileUrl : null, isPoster ? null : fileUrl);
+                return Ok(ApiResponse.Success(new { Url = fileUrl }));
+            }
+            catch (Exception ex)
+            {
                 if (System.IO.File.Exists(filePath))
                 {
                     System.IO.File.Delete(filePath);
                 }
-                return NotFound(new { Message = $"Movie with ID {id} not found." });
+                return NotFound(ApiResponse.Fail<string>(ex.Message));
             }
-
-            return Ok(new { Url = fileUrl });
         }
     }
 }

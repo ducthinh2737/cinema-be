@@ -7,6 +7,7 @@ namespace CinemaBooking.API.Models.Cinemas
     {
         public int HallTypeId { get; set; }
         public string TypeName { get; set; } = null!;
+        public string? Description { get; set; }
 
         // Audit & Soft Delete Fields
         public bool IsDeleted { get; set; } = false;

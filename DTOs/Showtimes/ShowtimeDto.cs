@@ -18,6 +18,8 @@ namespace CinemaBooking.API.DTOs.Showtimes
         public DateTime EndTime { get; set; }
         public int AvailableSeats { get; set; }
         public int TotalSeats { get; set; }
+        public string Status { get; set; } = null!;
+        public CinemaBooking.API.DTOs.Cinemas.HallDto? Hall { get; set; }
     }
 
     public class ShowtimeCreateDto
@@ -51,5 +53,9 @@ namespace CinemaBooking.API.DTOs.Showtimes
         public int? CinemaId { get; set; }
         public int? MovieId { get; set; }
         public DateTime? Date { get; set; }
+        public string? Status { get; set; }
+        public string? SearchTerm { get; set; }
+        public string? SortBy { get; set; }
+        public bool IsDescending { get; set; }
     }
 }

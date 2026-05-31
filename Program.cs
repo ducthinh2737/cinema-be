@@ -27,6 +27,25 @@ namespace CinemaBooking.API
             builder.Services.AddDbContext<CinemaDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowReactApp", policy =>
+                {
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                        {
+                            return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+                        }
+                        return false;
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+                });
+            });
+
             // Add Repositories
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IMovieRepository, MovieRepository>();
@@ -51,9 +70,13 @@ namespace CinemaBooking.API
             builder.Services.AddScoped<IPromotionService, PromotionService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
             builder.Services.AddScoped<JwtHelper>();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+            builder.Services.AddScoped<ISlugService, SlugService>();
  
             // Add Distributed Caching
             builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddMemoryCache();
  
             // Add Background Services
             builder.Services.AddHostedService<BookingExpirationService>();
@@ -81,6 +104,20 @@ namespace CinemaBooking.API
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/hub/notifications") || path.StartsWithSegments("/hub/seat")))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -147,6 +184,22 @@ namespace CinemaBooking.API
 
             var app = builder.Build();
 
+            // Seed Database
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var context = services.GetRequiredService<CinemaDbContext>();
+                    CinemaBooking.API.Data.Seeders.CinemaDbInitializer.Initialize(context);
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "An error occurred while seeding the database.");
+                }
+            }
+
             // Enable Custom Middlewares in correct architectural order
             app.UseMiddleware<ExceptionMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
@@ -163,15 +216,21 @@ namespace CinemaBooking.API
 
             app.UseHttpsRedirection();
 
+            app.UseStaticFiles();
+
             app.UseRouting();
+
+            app.UseCors("AllowReactApp");
+
+            app.UseWebSockets();
 
             app.UseAuthentication();
             app.UseMiddleware<JwtMiddleware>();
             app.UseAuthorization();
 
             app.MapControllers();
-            app.MapHub<SeatHub>("/seathub");
-            app.MapHub<NotificationHub>("/notificationhub");
+            app.MapHub<SeatHub>("/hub/seat");
+            app.MapHub<NotificationHub>("/hub/notifications");
 
             app.Run();
         }
