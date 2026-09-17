@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using CinemaBooking.API.Data;
 using CinemaBooking.API.DTOs.Cinemas;
 using CinemaBooking.API.Services.Interfaces;
 
@@ -10,10 +12,12 @@ namespace CinemaBooking.API.Controllers
     public class HallTypesController : ControllerBase
     {
         private readonly ICinemaService _cinemaService;
+        private readonly CinemaDbContext _context;
 
-        public HallTypesController(ICinemaService cinemaService)
+        public HallTypesController(ICinemaService cinemaService, CinemaDbContext context)
         {
             _cinemaService = cinemaService;
+            _context = context;
         }
 
         [HttpGet]
@@ -71,6 +75,24 @@ namespace CinemaBooking.API.Controllers
                 return NotFound(new { Message = $"Hall Type with ID {id} not found or already deleted." });
             }
             return Ok(new { Message = "Hall Type has been successfully soft deleted." });
+        }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteHallType(int id)
+        {
+            var hallType = await _context.HallTypes.FindAsync(id);
+            if (hallType == null) return NotFound(new { Message = $"Không tìm thấy loại phòng chiếu với ID {id}." });
+
+            var hasHalls = await _context.Halls.AnyAsync(h => h.HallTypeId == id);
+            if (hasHalls)
+            {
+                return BadRequest(new { Message = "Không thể xóa vật lý loại phòng này vì vẫn còn phòng chiếu liên kết với nó." });
+            }
+
+            _context.HallTypes.Remove(hallType);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Loại phòng chiếu đã được xóa vật lý khỏi cơ sở dữ liệu." });
         }
     }
 }

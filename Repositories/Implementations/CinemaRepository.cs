@@ -22,7 +22,7 @@ namespace CinemaBooking.API.Repositories.Implementations
         // Cinema
         public async Task<(IEnumerable<Cinema> Cinemas, int TotalCount)> GetPagedCinemasAsync(CinemaQueryParameters queryParams)
         {
-            var query = _context.Cinemas.Include(c => c.City).AsQueryable();
+            var query = _context.Cinemas.Include(c => c.City).Include(c => c.Halls).ThenInclude(h => h.Seats).AsQueryable();
 
             if (!string.IsNullOrEmpty(queryParams.Search))
             {
@@ -34,9 +34,41 @@ namespace CinemaBooking.API.Repositories.Implementations
                 query = query.Where(c => c.CityId == queryParams.CityId.Value);
             }
 
+            if (!string.IsNullOrEmpty(queryParams.Status))
+            {
+                query = query.Where(c => c.Status == queryParams.Status);
+            }
+
+            // Apply sorting
+            IOrderedQueryable<Cinema> orderedQuery;
+            if (!string.IsNullOrEmpty(queryParams.SortBy))
+            {
+                switch (queryParams.SortBy.ToLowerInvariant())
+                {
+                    case "newest":
+                        orderedQuery = query.OrderByDescending(c => c.CreatedAt);
+                        break;
+                    case "oldest":
+                        orderedQuery = query.OrderBy(c => c.CreatedAt);
+                        break;
+                    case "mosthalls":
+                        orderedQuery = query.OrderByDescending(c => c.Halls.Count);
+                        break;
+                    case "mostseats":
+                        orderedQuery = query.OrderByDescending(c => c.Halls.SelectMany(h => h.Seats).Count());
+                        break;
+                    default:
+                        orderedQuery = query.OrderByDescending(c => c.CinemaId);
+                        break;
+                }
+            }
+            else
+            {
+                orderedQuery = query.OrderByDescending(c => c.CinemaId);
+            }
+
             int totalCount = await query.CountAsync();
-            var cinemas = await query
-                .OrderBy(c => c.CinemaId)
+            var cinemas = await orderedQuery
                 .Skip((queryParams.PageNumber - 1) * queryParams.PageSize)
                 .Take(queryParams.PageSize)
                 .ToListAsync();
@@ -64,12 +96,32 @@ namespace CinemaBooking.API.Repositories.Implementations
             return Task.CompletedTask;
         }
 
-        public Task DeleteCinemaAsync(Cinema cinema)
+        public async Task DeleteCinemaAsync(Cinema cinema)
         {
+            var hallsExist = await _context.Halls
+                .AnyAsync(h => h.CinemaId == cinema.CinemaId && !h.IsDeleted);
+            if (hallsExist)
+            {
+                throw new InvalidOperationException("Không thể xóa rạp chiếu vì còn các phòng chiếu hoạt động.");
+            }
+
+            var showtimesExist = await _context.Showtimes
+                .AnyAsync(s => s.Hall.CinemaId == cinema.CinemaId);
+            if (showtimesExist)
+            {
+                throw new InvalidOperationException("Không thể xóa rạp chiếu vì đang có lịch chiếu phim.");
+            }
+
+            var ticketsSoldExist = await _context.Bookings
+                .AnyAsync(b => b.Showtime.Hall.CinemaId == cinema.CinemaId && b.BookingStatus != "Cancelled");
+            if (ticketsSoldExist)
+            {
+                throw new InvalidOperationException("Không thể xóa rạp chiếu vì đã bán vé.");
+            }
+
             cinema.IsDeleted = true;
             cinema.DeletedAt = DateTime.UtcNow;
             _context.Cinemas.Update(cinema);
-            return Task.CompletedTask;
         }
 
         // Hall
@@ -103,12 +155,25 @@ namespace CinemaBooking.API.Repositories.Implementations
             return Task.CompletedTask;
         }
 
-        public Task DeleteHallAsync(Hall hall)
+        public async Task DeleteHallAsync(Hall hall)
         {
+            var showtimesExist = await _context.Showtimes
+                .AnyAsync(s => s.HallId == hall.HallId);
+            if (showtimesExist)
+            {
+                throw new InvalidOperationException("Không thể xóa phòng chiếu vì đang có lịch chiếu hoạt động.");
+            }
+
+            var ticketsSoldExist = await _context.Bookings
+                .AnyAsync(b => b.Showtime.HallId == hall.HallId && b.BookingStatus != "Cancelled");
+            if (ticketsSoldExist)
+            {
+                throw new InvalidOperationException("Không thể xóa phòng chiếu vì đã bán vé.");
+            }
+
             hall.IsDeleted = true;
             hall.DeletedAt = DateTime.UtcNow;
             _context.Halls.Update(hall);
-            return Task.CompletedTask;
         }
 
         // Seat
@@ -174,12 +239,18 @@ namespace CinemaBooking.API.Repositories.Implementations
             return Task.CompletedTask;
         }
 
-        public Task DeleteHallTypeAsync(HallType hallType)
+        public async Task DeleteHallTypeAsync(HallType hallType)
         {
+            var hallsExist = await _context.Halls
+                .AnyAsync(h => h.HallTypeId == hallType.HallTypeId && !h.IsDeleted);
+            if (hallsExist)
+            {
+                throw new InvalidOperationException("Không thể xóa loại phòng chiếu vì vẫn còn phòng chiếu đang sử dụng loại này.");
+            }
+
             hallType.IsDeleted = true;
             hallType.DeletedAt = DateTime.UtcNow;
             _context.HallTypes.Update(hallType);
-            return Task.CompletedTask;
         }
 
         // SeatType
@@ -206,12 +277,18 @@ namespace CinemaBooking.API.Repositories.Implementations
             return Task.CompletedTask;
         }
 
-        public Task DeleteSeatTypeAsync(SeatType seatType)
+        public async Task DeleteSeatTypeAsync(SeatType seatType)
         {
+            var seatsExist = await _context.Seats
+                .AnyAsync(s => s.SeatTypeId == seatType.SeatTypeId && !s.IsDeleted);
+            if (seatsExist)
+            {
+                throw new InvalidOperationException("Không thể xóa loại ghế vì vẫn còn ghế đang sử dụng loại này.");
+            }
+
             seatType.IsDeleted = true;
             seatType.DeletedAt = DateTime.UtcNow;
             _context.SeatTypes.Update(seatType);
-            return Task.CompletedTask;
         }
 
         // Save

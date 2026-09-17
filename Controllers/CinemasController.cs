@@ -83,24 +83,13 @@ namespace CinemaBooking.API.Controllers
             return Ok(new { Message = "Cinema has been successfully soft deleted." });
         }
 
-        [HttpPost("{id:int}/upload-image")]
-        public async Task<IActionResult> UploadImage(int id, IFormFile file)
+        private async Task<string?> SaveUploadedFileAsync(IFormFile file)
         {
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest(new { Message = "No file uploaded." });
-            }
-
-            if (file.Length > MaxFileBytes)
-            {
-                return BadRequest(new { Message = "File size exceeds limit of 5 MB." });
-            }
+            if (file == null || file.Length == 0) return null;
+            if (file.Length > MaxFileBytes) return null;
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!_allowedExtensions.Contains(extension))
-            {
-                return BadRequest(new { Message = $"Invalid file format. Allowed formats: {string.Join(", ", _allowedExtensions)}" });
-            }
+            if (!_allowedExtensions.Contains(extension)) return null;
 
             var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "cinemas");
             if (!Directory.Exists(uploadsFolder))
@@ -116,7 +105,18 @@ namespace CinemaBooking.API.Controllers
                 await file.CopyToAsync(stream);
             }
 
-            var relativeUrl = $"/uploads/cinemas/{fileName}";
+            return $"/uploads/cinemas/{fileName}";
+        }
+
+        [HttpPost("{id:int}/upload-image")]
+        public async Task<IActionResult> UploadImage(int id, IFormFile file)
+        {
+            var relativeUrl = await SaveUploadedFileAsync(file);
+            if (relativeUrl == null)
+            {
+                return BadRequest(new { Message = "File upload failed. Ensure size is < 5MB and format is valid." });
+            }
+
             var updatedCinema = await _cinemaService.UpdateCinemaImageAsync(id, relativeUrl);
             if (updatedCinema == null)
             {
@@ -124,6 +124,45 @@ namespace CinemaBooking.API.Controllers
             }
 
             return Ok(updatedCinema);
+        }
+
+        [HttpPost("{id:int}/upload-logo")]
+        public async Task<IActionResult> UploadLogo(int id, IFormFile file)
+        {
+            var relativeUrl = await SaveUploadedFileAsync(file);
+            if (relativeUrl == null)
+            {
+                return BadRequest(new { Message = "File upload failed. Ensure size is < 5MB and format is valid." });
+            }
+            var updated = await _cinemaService.UpdateCinemaLogoAsync(id, relativeUrl);
+            if (updated == null) return NotFound();
+            return Ok(updated);
+        }
+
+        [HttpPost("{id:int}/upload-banner")]
+        public async Task<IActionResult> UploadBanner(int id, IFormFile file)
+        {
+            var relativeUrl = await SaveUploadedFileAsync(file);
+            if (relativeUrl == null)
+            {
+                return BadRequest(new { Message = "File upload failed. Ensure size is < 5MB and format is valid." });
+            }
+            var updated = await _cinemaService.UpdateCinemaBannerAsync(id, relativeUrl);
+            if (updated == null) return NotFound();
+            return Ok(updated);
+        }
+
+        [HttpPost("{id:int}/upload-gallery")]
+        public async Task<IActionResult> UploadGallery(int id, IFormFile file)
+        {
+            var relativeUrl = await SaveUploadedFileAsync(file);
+            if (relativeUrl == null)
+            {
+                return BadRequest(new { Message = "File upload failed. Ensure size is < 5MB and format is valid." });
+            }
+            var updated = await _cinemaService.AddCinemaGalleryImageAsync(id, relativeUrl);
+            if (updated == null) return NotFound();
+            return Ok(updated);
         }
 
         [HttpGet("{cinemaId:int}/halls")]

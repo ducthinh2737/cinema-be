@@ -66,6 +66,12 @@ namespace CinemaBooking.API.Repositories.Implementations
                 .ToListAsync();
         }
 
+        public async Task<int> GetUnreadCountAsync(int userId)
+        {
+            return await _context.Notifications
+                .CountAsync(n => n.UserId == userId && !n.IsRead);
+        }
+
         public async Task<Notification?> GetNotificationByIdAsync(int id)
         {
             return await _context.Notifications.FirstOrDefaultAsync(n => n.NotificationId == id);
@@ -75,6 +81,16 @@ namespace CinemaBooking.API.Repositories.Implementations
         {
             notification.CreatedAt = DateTime.UtcNow;
             await _context.Notifications.AddAsync(notification);
+        }
+
+        public async Task AddRangeAsync(IEnumerable<Notification> notifications)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var n in notifications)
+            {
+                n.CreatedAt = now;
+            }
+            await _context.Notifications.AddRangeAsync(notifications);
         }
 
         public Task UpdateNotificationAsync(Notification notification)

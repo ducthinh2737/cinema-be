@@ -12,6 +12,7 @@ using CinemaBooking.API.DTOs.Common;
 using CinemaBooking.API.Repositories.Interfaces;
 using CinemaBooking.API.Services.Interfaces;
 using CinemaBooking.API.SignalR;
+using CinemaBooking.API.Constants;
 
 namespace CinemaBooking.API.Services.Implementations
 {
@@ -68,9 +69,11 @@ namespace CinemaBooking.API.Services.Implementations
 
             if (!saved)
             {
-                _logger.LogError("Failed to save notification for user {UserId}", userId);
+                _logger.LogError("Failed to save notification in database for user {UserId}", userId);
                 return ApiResponse.Fail<NotificationDetailDto>("Failed to send notification.");
             }
+
+            _logger.LogInformation("Notification created successfully for user {UserId} with ID {NotificationId}", userId, notification.NotificationId);
 
             // Invalidate cache
             InvalidateUnreadCountCache(userId);
@@ -94,8 +97,8 @@ namespace CinemaBooking.API.Services.Implementations
                 UnreadCount = unreadCount
             };
 
-            await BroadcastRealtimeAsync(userId, "ReceiveNotification", realtimeDto);
-            await BroadcastRealtimeAsync(userId, "UnreadCountUpdated", new { UnreadCount = unreadCount });
+            await BroadcastRealtimeAsync(userId, NotificationEvents.ReceiveNotification, realtimeDto);
+            await BroadcastRealtimeAsync(userId, NotificationEvents.UnreadCountUpdated, new { UnreadCount = unreadCount });
 
             return ApiResponse.Success(detailDto);
         }
@@ -115,9 +118,10 @@ namespace CinemaBooking.API.Services.Implementations
                 return ApiResponse.Success(true);
             }
 
-            _logger.LogInformation("Sending bulk notification to {Count} users. Type: {Type}", userIds.Count, type);
+            var uniqueUserIds = userIds.Distinct().ToList();
+            _logger.LogInformation("Sending bulk notification to {Count} unique users. Type: {Type}", uniqueUserIds.Count, type);
 
-            var notifications = userIds.Select(userId => new Notification
+            var notifications = uniqueUserIds.Select(userId => new Notification
             {
                 UserId = userId,
                 Title = title,
@@ -127,41 +131,43 @@ namespace CinemaBooking.API.Services.Implementations
                 CreatedAt = DateTime.UtcNow
             }).ToList();
 
-            foreach (var n in notifications)
-            {
-                await _notificationRepository.AddNotificationAsync(n);
-            }
+            await _notificationRepository.AddRangeAsync(notifications);
 
             var saved = await _notificationRepository.SaveChangesAsync();
             if (!saved)
             {
-                _logger.LogError("Failed to save bulk notifications.");
+                _logger.LogError("Failed to save bulk notifications in database.");
                 return ApiResponse.Fail<bool>("Failed to send bulk notifications.");
             }
 
+            _logger.LogInformation("Bulk notifications sent successfully to {Count} users", uniqueUserIds.Count);
+
+            var notificationLookup = notifications.ToDictionary(x => x.UserId);
+
             // Invalidate caches and broadcast SignalR messages in parallel
-            var broadcastTasks = userIds.Select(async userId =>
+            var broadcastTasks = uniqueUserIds.Select(async userId =>
             {
                 InvalidateUnreadCountCache(userId);
 
                 var countResult = await GetUnreadCountAsync(userId);
                 var unreadCount = countResult.Data?.UnreadCount ?? 0;
 
-                var correspondingNotification = notifications.First(n => n.UserId == userId);
-
-                var realtimeDto = new NotificationRealtimeDto
+                if (notificationLookup.TryGetValue(userId, out var correspondingNotification))
                 {
-                    NotificationId = correspondingNotification.NotificationId,
-                    Title = correspondingNotification.Title,
-                    Message = correspondingNotification.Message,
-                    Type = correspondingNotification.Type,
-                    Priority = priority.ToString(),
-                    CreatedAt = correspondingNotification.CreatedAt,
-                    UnreadCount = unreadCount
-                };
+                    var realtimeDto = new NotificationRealtimeDto
+                    {
+                        NotificationId = correspondingNotification.NotificationId,
+                        Title = correspondingNotification.Title,
+                        Message = correspondingNotification.Message,
+                        Type = correspondingNotification.Type,
+                        Priority = priority.ToString(),
+                        CreatedAt = correspondingNotification.CreatedAt,
+                        UnreadCount = unreadCount
+                    };
 
-                await BroadcastRealtimeAsync(userId, "ReceiveNotification", realtimeDto);
-                await BroadcastRealtimeAsync(userId, "UnreadCountUpdated", new { UnreadCount = unreadCount });
+                    await BroadcastRealtimeAsync(userId, NotificationEvents.ReceiveNotification, realtimeDto);
+                    await BroadcastRealtimeAsync(userId, NotificationEvents.UnreadCountUpdated, new { UnreadCount = unreadCount });
+                }
             });
 
             await Task.WhenAll(broadcastTasks);
@@ -203,14 +209,13 @@ namespace CinemaBooking.API.Services.Implementations
         /// </summary>
         public async Task<ApiResponse<NotificationCountDto>> GetUnreadCountAsync(int userId)
         {
-            var cacheKey = $"UnreadCount_{userId}";
+            var cacheKey = GetUnreadCacheKey(userId);
             if (_cache.TryGetValue(cacheKey, out int cachedCount))
             {
                 return ApiResponse.Success(new NotificationCountDto { UserId = userId, UnreadCount = cachedCount });
             }
 
-            var unreadNotifications = await _notificationRepository.GetUnreadNotificationsAsync(userId);
-            var count = unreadNotifications.Count();
+            var count = await _notificationRepository.GetUnreadCountAsync(userId);
 
             _cache.Set(cacheKey, count, TimeSpan.FromMinutes(5));
 
@@ -225,6 +230,7 @@ namespace CinemaBooking.API.Services.Implementations
             var notification = await _notificationRepository.GetNotificationByIdAsync(id);
             if (notification == null)
             {
+                _logger.LogWarning("Notification with ID {NotificationId} not found to mark as read", id);
                 return ApiResponse.Fail<bool>("Notification not found.");
             }
 
@@ -232,15 +238,22 @@ namespace CinemaBooking.API.Services.Implementations
             {
                 notification.IsRead = true;
                 await _notificationRepository.UpdateNotificationAsync(notification);
-                await _notificationRepository.SaveChangesAsync();
+                var saved = await _notificationRepository.SaveChangesAsync();
+                if (!saved)
+                {
+                    _logger.LogError("Failed to save mark as read for notification ID {NotificationId} and User ID {UserId}", id, notification.UserId);
+                    return ApiResponse.Fail<bool>("Failed to mark notification as read.");
+                }
+
+                _logger.LogInformation("Notification with ID {NotificationId} marked as read for user {UserId}", id, notification.UserId);
 
                 InvalidateUnreadCountCache(notification.UserId);
 
                 var countResult = await GetUnreadCountAsync(notification.UserId);
                 var unreadCount = countResult.Data?.UnreadCount ?? 0;
 
-                await BroadcastRealtimeAsync(notification.UserId, "NotificationRead", new { NotificationId = id });
-                await BroadcastRealtimeAsync(notification.UserId, "UnreadCountUpdated", new { UnreadCount = unreadCount });
+                await BroadcastRealtimeAsync(notification.UserId, NotificationEvents.NotificationRead, new { NotificationId = id });
+                await BroadcastRealtimeAsync(notification.UserId, NotificationEvents.UnreadCountUpdated, new { UnreadCount = unreadCount });
             }
 
             return ApiResponse.Success(true);
@@ -251,12 +264,28 @@ namespace CinemaBooking.API.Services.Implementations
         /// </summary>
         public async Task<ApiResponse<bool>> MarkAllAsReadAsync(int userId)
         {
+            _logger.LogInformation("Marking all notifications as read for user {UserId}", userId);
+
+            var unreadCount = await _notificationRepository.GetUnreadCountAsync(userId);
+            if (unreadCount == 0)
+            {
+                _logger.LogInformation("No unread notifications to mark as read for user {UserId}", userId);
+                return ApiResponse.Success(true);
+            }
+
             await _notificationRepository.MarkAllAsReadAsync(userId);
-            await _notificationRepository.SaveChangesAsync();
+            var saved = await _notificationRepository.SaveChangesAsync();
+            if (!saved)
+            {
+                _logger.LogError("Failed to mark all notifications as read for user {UserId} in database", userId);
+                return ApiResponse.Fail<bool>("Failed to mark all notifications as read.");
+            }
+
+            _logger.LogInformation("All notifications marked as read successfully for user {UserId}", userId);
 
             InvalidateUnreadCountCache(userId);
 
-            await BroadcastRealtimeAsync(userId, "UnreadCountUpdated", new { UnreadCount = 0 });
+            await BroadcastRealtimeAsync(userId, NotificationEvents.UnreadCountUpdated, new { UnreadCount = 0 });
 
             return ApiResponse.Success(true);
         }
@@ -269,6 +298,7 @@ namespace CinemaBooking.API.Services.Implementations
             var notification = await _notificationRepository.GetNotificationByIdAsync(id);
             if (notification == null)
             {
+                _logger.LogWarning("Notification with ID {NotificationId} not found to delete", id);
                 return ApiResponse.Fail<bool>("Notification not found.");
             }
 
@@ -276,7 +306,14 @@ namespace CinemaBooking.API.Services.Implementations
             var wasUnread = !notification.IsRead;
 
             await _notificationRepository.DeleteNotificationAsync(notification);
-            await _notificationRepository.SaveChangesAsync();
+            var saved = await _notificationRepository.SaveChangesAsync();
+            if (!saved)
+            {
+                _logger.LogError("Failed to delete notification ID {NotificationId} for user {UserId} in database", id, userId);
+                return ApiResponse.Fail<bool>("Failed to delete notification.");
+            }
+
+            _logger.LogInformation("Notification with ID {NotificationId} deleted successfully for user {UserId}", id, userId);
 
             if (wasUnread)
             {
@@ -286,8 +323,8 @@ namespace CinemaBooking.API.Services.Implementations
             var countResult = await GetUnreadCountAsync(userId);
             var unreadCount = countResult.Data?.UnreadCount ?? 0;
 
-            await BroadcastRealtimeAsync(userId, "NotificationDeleted", new { NotificationId = id });
-            await BroadcastRealtimeAsync(userId, "UnreadCountUpdated", new { UnreadCount = unreadCount });
+            await BroadcastRealtimeAsync(userId, NotificationEvents.NotificationDeleted, new { NotificationId = id });
+            await BroadcastRealtimeAsync(userId, NotificationEvents.UnreadCountUpdated, new { UnreadCount = unreadCount });
 
             return ApiResponse.Success(true);
         }
@@ -311,8 +348,13 @@ namespace CinemaBooking.API.Services.Implementations
 
         private void InvalidateUnreadCountCache(int userId)
         {
-            var cacheKey = $"UnreadCount_{userId}";
+            var cacheKey = GetUnreadCacheKey(userId);
             _cache.Remove(cacheKey);
+        }
+
+        private static string GetUnreadCacheKey(int userId)
+        {
+            return $"UnreadCount_{userId}";
         }
 
         #endregion

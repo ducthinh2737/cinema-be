@@ -30,6 +30,7 @@ namespace CinemaBooking.API.Repositories.Implementations
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
                 .Include(s => s.Hall).ThenInclude(h => h.Seats)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .FirstOrDefaultAsync(s => s.ShowtimeId == id);
         }
@@ -39,6 +40,7 @@ namespace CinemaBooking.API.Repositories.Implementations
             return await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .ToListAsync();
         }
@@ -66,6 +68,7 @@ namespace CinemaBooking.API.Repositories.Implementations
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
                 .Include(s => s.Hall).ThenInclude(h => h.Seats)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .Where(s => s.MovieId == movieId)
                 .OrderBy(s => s.StartTime)
@@ -78,6 +81,7 @@ namespace CinemaBooking.API.Repositories.Implementations
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
                 .Include(s => s.Hall).ThenInclude(h => h.Seats)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .Where(s => s.Hall.CinemaId == cinemaId)
                 .OrderBy(s => s.StartTime)
@@ -129,6 +133,7 @@ namespace CinemaBooking.API.Repositories.Implementations
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
                 .Include(s => s.Hall).ThenInclude(h => h.Seats)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .AsQueryable();
 

@@ -73,6 +73,12 @@ namespace CinemaBooking.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Language deleted successfully." });
         }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteLanguage(int id)
+        {
+            return await DeleteLanguage(id);
+        }
     }
 
     public class LanguageCreateDto

@@ -29,6 +29,18 @@ namespace CinemaBooking.API.Data.Configurations
                    .WithOne(ma => ma.Movie)
                    .HasForeignKey(ma => ma.MovieId);
 
+            builder.HasMany(m => m.MovieFormats)
+                   .WithMany(f => f.Movies)
+                   .UsingEntity<Dictionary<string, object>>(
+                       "MovieMovieFormat",
+                       j => j.HasOne<MovieFormat>().WithMany().HasForeignKey("MovieFormatId"),
+                       j => j.HasOne<Movie>().WithMany().HasForeignKey("MovieId"),
+                       j =>
+                       {
+                           j.HasKey("MovieId", "MovieFormatId");
+                           j.ToTable("MovieMovieFormats");
+                       });
+
             // Global Query Filter for Soft Delete
             builder.HasQueryFilter(m => !m.IsDeleted);
         }

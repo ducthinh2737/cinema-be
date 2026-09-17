@@ -35,6 +35,17 @@ namespace CinemaBooking.API.Controllers
             return CreatedAtAction(nameof(GetBookingById), new { id = result.Data.BookingId }, result);
         }
 
+        [HttpPost("{id:int}/apply-discount")]
+        public async Task<IActionResult> ApplyDiscount(int id, [FromBody] BookingApplyDiscountDto dto)
+        {
+            var result = await _bookingService.ApplyDiscountAsync(id, dto.PromoCode, dto.PointsToRedeem);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
         [HttpPost("confirm")]
         public async Task<IActionResult> ConfirmBooking([FromBody] BookingConfirmDto confirmDto)
         {
@@ -92,6 +103,18 @@ namespace CinemaBooking.API.Controllers
                 return Forbid();
             }
 
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("{id:int}/checkin")]
+        public async Task<IActionResult> CheckInBooking(int id)
+        {
+            var result = await _bookingService.CheckInBookingAsync(id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
             return Ok(result);
         }
 

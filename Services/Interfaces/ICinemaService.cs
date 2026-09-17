@@ -14,6 +14,9 @@ namespace CinemaBooking.API.Services.Interfaces
         Task<CinemaDto?> UpdateCinemaAsync(int id, CinemaUpdateDto updateDto);
         Task<bool> DeleteCinemaAsync(int id);
         Task<CinemaDto?> UpdateCinemaImageAsync(int id, string imageUrl);
+        Task<CinemaDto?> UpdateCinemaLogoAsync(int id, string logoUrl);
+        Task<CinemaDto?> UpdateCinemaBannerAsync(int id, string bannerUrl);
+        Task<CinemaDto?> AddCinemaGalleryImageAsync(int id, string imageUrl);
 
         // Hall
         Task<IEnumerable<HallDto>> GetHallsByCinemaIdAsync(int cinemaId);

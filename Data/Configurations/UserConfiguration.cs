@@ -17,6 +17,11 @@ namespace CinemaBooking.API.Data.Configurations
             builder.HasMany(u => u.UserRoles)
                    .WithOne(ur => ur.User)
                    .HasForeignKey(ur => ur.UserId);
+
+            builder.HasOne(u => u.MemberTier)
+                   .WithMany(t => t.Users)
+                   .HasForeignKey(u => u.MemberTierId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

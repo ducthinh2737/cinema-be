@@ -20,6 +20,7 @@ namespace CinemaBooking.API.DTOs.Showtimes
         public int TotalSeats { get; set; }
         public string Status { get; set; } = null!;
         public CinemaBooking.API.DTOs.Cinemas.HallDto? Hall { get; set; }
+        public CinemaBooking.API.DTOs.Movies.MovieDto? Movie { get; set; }
     }
 
     public class ShowtimeCreateDto
@@ -38,9 +39,20 @@ namespace CinemaBooking.API.DTOs.Showtimes
         public DateTime StartTime { get; set; }
     }
 
+    public class ShowtimeBulkCreateDto
+    {
+        public int MovieId { get; set; }
+        public int HallId { get; set; }
+        public int PriceId { get; set; }
+        public System.Collections.Generic.List<DateTime> Dates { get; set; } = null!;
+        public System.Collections.Generic.List<string> TimeSlots { get; set; } = null!;
+        public bool FlatPriceEnabled { get; set; }
+        public decimal? FlatPrice { get; set; }
+    }
+
     public class ShowtimeQueryParameters
     {
-        private const int MaxPageSize = 50;
+        private const int MaxPageSize = 1000;
         public int PageNumber { get; set; } = 1;
 
         private int _pageSize = 10;

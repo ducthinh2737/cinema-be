@@ -15,7 +15,12 @@ namespace CinemaBooking.API.Mappings
                 .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.Showtime != null ? src.Showtime.StartTime : System.DateTime.MinValue))
                 .ForMember(dest => dest.HallName, opt => opt.MapFrom(src => (src.Showtime != null && src.Showtime.Hall != null) ? src.Showtime.Hall.HallName : string.Empty))
                 .ForMember(dest => dest.CinemaName, opt => opt.MapFrom(src => (src.Showtime != null && src.Showtime.Hall != null && src.Showtime.Hall.Cinema != null) ? src.Showtime.Hall.Cinema.CinemaName : string.Empty))
-                .ForMember(dest => dest.Seats, opt => opt.MapFrom(src => src.BookingSeats != null ? src.BookingSeats.Select(bs => bs.Seat != null ? bs.Seat.SeatCode : string.Empty).ToList() : new System.Collections.Generic.List<string>()));
+                .ForMember(dest => dest.Seats, opt => opt.MapFrom(src => src.BookingSeats != null ? src.BookingSeats.Select(bs => bs.Seat != null ? bs.Seat.SeatCode : string.Empty).ToList() : new System.Collections.Generic.List<string>()))
+                .ForMember(dest => dest.MoviePosterUrl, opt => opt.MapFrom(src => (src.Showtime != null && src.Showtime.Movie != null) ? src.Showtime.Movie.PosterUrl : string.Empty))
+                .ForMember(dest => dest.MovieBannerUrl, opt => opt.MapFrom(src => (src.Showtime != null && src.Showtime.Movie != null) ? src.Showtime.Movie.BannerUrl : string.Empty))
+                .ForMember(dest => dest.MovieDuration, opt => opt.MapFrom(src => (src.Showtime != null && src.Showtime.Movie != null) ? src.Showtime.Movie.Duration : 0));
+
+            CreateMap<BookingDto, BookingResponseDto>();
         }
     }
 }

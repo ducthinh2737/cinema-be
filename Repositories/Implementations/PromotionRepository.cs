@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using CinemaBooking.API.Data;
 using CinemaBooking.API.Models.Promotions;
 using CinemaBooking.API.Models.Bookings;
+using CinemaBooking.API.Models.Showtimes;
+using CinemaBooking.API.Models.Users;
 using CinemaBooking.API.DTOs.Promotions;
 using CinemaBooking.API.Repositories.Interfaces;
 
@@ -46,12 +48,16 @@ namespace CinemaBooking.API.Repositories.Implementations
 
         public async Task<Promotion?> GetPromotionByIdAsync(int id)
         {
-            return await _context.Promotions.FirstOrDefaultAsync(p => p.PromotionId == id);
+            return await _context.Promotions
+                .Include(p => p.PromotionConditions)
+                .FirstOrDefaultAsync(p => p.PromotionId == id);
         }
 
         public async Task<Promotion?> GetPromotionByCodeAsync(string code)
         {
-            return await _context.Promotions.FirstOrDefaultAsync(p => p.PromoCode == code);
+            return await _context.Promotions
+                .Include(p => p.PromotionConditions)
+                .FirstOrDefaultAsync(p => p.PromoCode == code);
         }
 
         public async Task AddPromotionAsync(Promotion promotion)
@@ -106,6 +112,20 @@ namespace CinemaBooking.API.Repositories.Implementations
         public async Task AddBookingPromotionAsync(BookingPromotion bookingPromotion)
         {
             await _context.BookingPromotions.AddAsync(bookingPromotion);
+        }
+
+        public async Task<Showtime?> GetShowtimeByIdAsync(int showtimeId)
+        {
+            return await _context.Showtimes
+                .Include(s => s.Movie)
+                .FirstOrDefaultAsync(s => s.ShowtimeId == showtimeId);
+        }
+
+        public async Task<User?> GetUserByIdWithTierAsync(int userId)
+        {
+            return await _context.Users
+                .Include(u => u.MemberTier)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
         public async Task<bool> SaveChangesAsync()

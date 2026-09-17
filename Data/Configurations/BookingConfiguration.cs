@@ -13,13 +13,19 @@ namespace CinemaBooking.API.Data.Configurations
             builder.Property(b => b.TotalAmount).HasColumnType("decimal(18,2)");
             builder.Property(b => b.ServiceFee).HasColumnType("decimal(18,2)");
             builder.Property(b => b.DiscountAmount).HasColumnType("decimal(18,2)");
-            builder.Property(b => b.QRCodeUrl).HasMaxLength(500);
+            builder.Property(b => b.PointsDiscountAmount).HasColumnType("decimal(18,2)");
+            builder.Property(b => b.QRCodeUrl).HasColumnType("nvarchar(max)");
             
             builder.Property(b => b.RowVersion).IsRowVersion();
 
             builder.HasMany(b => b.BookingSeats)
                    .WithOne(bs => bs.Booking)
                    .HasForeignKey(bs => bs.BookingId);
+
+            builder.HasOne(b => b.Promotion)
+                   .WithMany()
+                   .HasForeignKey(b => b.PromotionId)
+                   .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

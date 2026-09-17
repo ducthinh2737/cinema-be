@@ -18,5 +18,6 @@ namespace CinemaBooking.API.Services.Interfaces
         Task<ApiResponse<List<MonthlyRevenueDto>>> GetRevenueChartAsync(DateTime? from = null, DateTime? to = null);
         Task<ApiResponse<BookingAnalyticsDto>> GetBookingAnalyticsAsync(DateTime? from = null, DateTime? to = null);
         Task<ApiResponse<double>> GetOccupancyRateAsync(DateTime? from = null, DateTime? to = null);
+        Task<ApiResponse<DashboardDataDto>> GetUnifiedDashboardDataAsync(DateTime? from = null, DateTime? to = null);
     }
 }

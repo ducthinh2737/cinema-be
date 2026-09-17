@@ -30,5 +30,6 @@ namespace CinemaBooking.API.Models.Movies
         public ICollection<MovieActor> MovieActors { get; set; } = new List<MovieActor>();
         public ICollection<Showtime> Showtimes { get; set; } = new List<Showtime>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<MovieFormat> MovieFormats { get; set; } = new List<MovieFormat>();
     }
 }

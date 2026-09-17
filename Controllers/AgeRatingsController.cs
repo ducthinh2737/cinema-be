@@ -68,10 +68,22 @@ namespace CinemaBooking.API.Controllers
         {
             var ageRating = await _context.AgeRatings.FindAsync(id);
             if (ageRating == null) return NotFound(new { Message = $"AgeRating with ID {id} not found." });
+
+            var hasMovies = await _context.Movies.AnyAsync(m => m.AgeRatingId == id);
+            if (hasMovies)
+            {
+                return BadRequest(new { Message = "Không thể xóa vật lý phân loại độ tuổi này vì vẫn còn phim liên kết với nó." });
+            }
             
             _context.AgeRatings.Remove(ageRating);
             await _context.SaveChangesAsync();
             return Ok(new { Message = "AgeRating deleted successfully." });
+        }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteAgeRating(int id)
+        {
+            return await DeleteAgeRating(id);
         }
     }
 

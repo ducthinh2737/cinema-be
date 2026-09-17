@@ -66,12 +66,24 @@ namespace CinemaBooking.API.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteFormat(int id)
         {
-            var format = await _context.MovieFormats.FindAsync(id);
+            var format = await _context.MovieFormats.Include(f => f.Movies).FirstOrDefaultAsync(f => f.MovieFormatId == id);
             if (format == null) return NotFound(new { Message = $"Format with ID {id} not found." });
+
+            var hasMovies = format.Movies.Any();
+            if (hasMovies)
+            {
+                return BadRequest(new { Message = "Không thể xóa vật lý định dạng này vì vẫn còn phim liên kết với nó." });
+            }
             
             _context.MovieFormats.Remove(format);
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Format deleted successfully." });
+        }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteFormat(int id)
+        {
+            return await DeleteFormat(id);
         }
     }
 

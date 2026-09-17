@@ -19,23 +19,26 @@ namespace CinemaBooking.API.Controllers
         private readonly ISeatLockService _seatLockService;
         private readonly CinemaDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IBatchShowtimeService _batchShowtimeService;
 
         public ShowtimesController(
             IShowtimeService showtimeService,
             ISeatLockService seatLockService,
             CinemaDbContext context,
-            IMapper mapper)
+            IMapper mapper,
+            IBatchShowtimeService batchShowtimeService)
         {
             _showtimeService = showtimeService;
             _seatLockService = seatLockService;
             _context = context;
             _mapper = mapper;
+            _batchShowtimeService = batchShowtimeService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetShowtimes([FromQuery] ShowtimeQueryParameters queryParams)
         {
-            var result = await _showtimeService.GetPagedShowtimesAsync(queryParams);
+            var result = await _showtimeService.GetPagedShowtimesAsync(queryParams, HttpContext.RequestAborted);
             return Ok(result);
         }
 
@@ -44,7 +47,7 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var result = await _showtimeService.GetShowtimeByIdAsync(id);
+                var result = await _showtimeService.GetShowtimeByIdAsync(id, HttpContext.RequestAborted);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -60,14 +63,14 @@ namespace CinemaBooking.API.Controllers
         [HttpGet("movie/{movieId:int}")]
         public async Task<IActionResult> GetShowtimesByMovieId(int movieId)
         {
-            var result = await _showtimeService.GetShowtimesByMovieIdAsync(movieId);
+            var result = await _showtimeService.GetShowtimesByMovieIdAsync(movieId, HttpContext.RequestAborted);
             return Ok(result);
         }
 
         [HttpGet("cinema/{cinemaId:int}")]
         public async Task<IActionResult> GetShowtimesByCinemaId(int cinemaId)
         {
-            var result = await _showtimeService.GetShowtimesByCinemaIdAsync(cinemaId);
+            var result = await _showtimeService.GetShowtimesByCinemaIdAsync(cinemaId, HttpContext.RequestAborted);
             return Ok(result);
         }
 
@@ -76,7 +79,7 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var result = await _showtimeService.CreateShowtimeAsync(createDto);
+                var result = await _showtimeService.CreateShowtimeAsync(createDto, HttpContext.RequestAborted);
                 return CreatedAtAction(nameof(GetShowtimeById), new { id = result.Data.ShowtimeId }, result);
             }
             catch (ArgumentException ex)
@@ -98,7 +101,7 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var result = await _showtimeService.UpdateShowtimeAsync(id, updateDto);
+                var result = await _showtimeService.UpdateShowtimeAsync(id, updateDto, HttpContext.RequestAborted);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -136,11 +139,20 @@ namespace CinemaBooking.API.Controllers
                     .ToListAsync();
 
                 var bookedSeatIds = await _context.BookingSeats
-                    .Where(bs => bs.Booking.ShowtimeId == id && bs.Booking.BookingStatus != "Cancelled")
+                    .Where(bs => bs.Booking.ShowtimeId == id && (bs.Booking.BookingStatus == "Confirmed" || bs.Booking.BookingStatus == "Paid" || bs.Booking.BookingStatus == "CheckedIn"))
                     .Select(bs => bs.SeatId)
                     .ToListAsync();
 
+                var pendingBookingSeats = await _context.BookingSeats
+                    .Include(bs => bs.Booking)
+                    .Where(bs => bs.Booking.ShowtimeId == id && bs.Booking.BookingStatus == "Pending")
+                    .ToListAsync();
+
+                var pendingSeatIds = pendingBookingSeats.Select(ps => ps.SeatId).ToList();
+
                 var lockedSeatIds = await _seatLockService.GetLockedSeatsAsync(id);
+
+                var pricingService = HttpContext.RequestServices.GetService(typeof(IPricingService)) as IPricingService;
 
                 var result = new List<object>();
                 foreach (var seat in seats)
@@ -157,6 +169,10 @@ namespace CinemaBooking.API.Controllers
                     {
                         status = "Booked";
                     }
+                    else if (pendingSeatIds.Contains(seat.SeatId))
+                    {
+                        status = "Locked";
+                    }
                     else if (lockedSeatIds.Contains(seat.SeatId))
                     {
                         status = "Locked";
@@ -166,11 +182,37 @@ namespace CinemaBooking.API.Controllers
                     string? lockedBySession = null;
                     if (status == "Locked")
                     {
-                        var lockInfo = await _seatLockService.GetSeatLockInfoAsync(id, seat.SeatId);
-                        if (lockInfo != null)
+                        var pendingSeat = pendingBookingSeats.FirstOrDefault(ps => ps.SeatId == seat.SeatId);
+                        if (pendingSeat != null)
                         {
-                            lockedBy = lockInfo.UserId;
-                            lockedBySession = lockInfo.SessionId;
+                            lockedBy = pendingSeat.Booking.UserId.ToString();
+                            lockedBySession = "";
+                        }
+                        else
+                        {
+                            var lockInfo = await _seatLockService.GetSeatLockInfoAsync(id, seat.SeatId);
+                            if (lockInfo != null)
+                            {
+                                lockedBy = lockInfo.UserId;
+                                lockedBySession = lockInfo.SessionId;
+                            }
+                        }
+                    }
+
+                    decimal seatPrice = 0;
+                    if (pricingService != null)
+                    {
+                        var computeReq = new PricingComputeRequestDto
+                        {
+                            SeatType = seat.SeatType?.TypeName ?? "STANDARD",
+                            HallId = showtime.HallId,
+                            MovieId = showtime.MovieId,
+                            ShowtimeId = showtime.ShowtimeId
+                        };
+                        var computeRes = await pricingService.ComputePriceAsync(computeReq);
+                        if (computeRes != null && computeRes.IsSuccess)
+                        {
+                            seatPrice = computeRes.Data.FinalPrice;
                         }
                     }
 
@@ -183,7 +225,8 @@ namespace CinemaBooking.API.Controllers
                         seatTypeName = seat.SeatType?.TypeName ?? "Standard",
                         status = status,
                         lockedBy = lockedBy,
-                        lockedBySession = lockedBySession
+                        lockedBySession = lockedBySession,
+                        price = seatPrice
                     });
                 }
 
@@ -200,7 +243,7 @@ namespace CinemaBooking.API.Controllers
         {
             try
             {
-                var result = await _showtimeService.DeleteShowtimeAsync(id);
+                var result = await _showtimeService.DeleteShowtimeAsync(id, HttpContext.RequestAborted);
                 return Ok(result);
             }
             catch (KeyNotFoundException ex)
@@ -214,6 +257,60 @@ namespace CinemaBooking.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ApiResponse.Fail<bool>(ex.Message));
+            }
+        }
+
+        [HttpPost("batch")]
+        public async Task<IActionResult> CreateShowtimeBatch([FromBody] ShowtimeBatchRequestDto batchDto)
+        {
+            try
+            {
+                var result = await _batchShowtimeService.CreateShowtimeBatchAsync(batchDto, HttpContext.RequestAborted);
+                if (!result.Success)
+                {
+                    return BadRequest(new ApiResponse<ShowtimeBatchResponseDto>
+                    {
+                        IsSuccess = false,
+                        Data = result,
+                        Message = "Không thể tạo loạt suất chiếu do có lỗi hoặc xung đột."
+                    });
+                }
+                if (result.CreatedShowtimes == null || !result.CreatedShowtimes.Any())
+                {
+                    return Ok(new ApiResponse<ShowtimeBatchResponseDto>
+                    {
+                        IsSuccess = false,
+                        Data = result,
+                        Message = "Không có suất chiếu nào được tạo."
+                    });
+                }
+                return Ok(ApiResponse.Success(result, "Tạo loạt suất chiếu thành công."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail<ShowtimeBatchResponseDto>(ex.Message));
+            }
+        }
+
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateBulkShowtimes([FromBody] ShowtimeBulkCreateDto bulkDto)
+        {
+            try
+            {
+                var result = await _showtimeService.CreateBulkShowtimesAsync(bulkDto, HttpContext.RequestAborted);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse.Fail<string>(ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ApiResponse.Fail<string>(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail<string>(ex.Message));
             }
         }
     }

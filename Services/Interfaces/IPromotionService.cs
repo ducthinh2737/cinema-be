@@ -11,6 +11,7 @@ namespace CinemaBooking.API.Services.Interfaces
         Task<PromotionDto> CreatePromotionAsync(PromotionCreateDto createDto);
         Task<PromotionDto?> UpdatePromotionAsync(int id, PromotionUpdateDto updateDto);
         Task<bool> DeletePromotionAsync(int id);
+        Task<PromotionDto?> TogglePromotionStatusAsync(int id);
 
         // Validation & Application
         Task<PromotionValidateResultDto> ValidatePromotionAsync(PromotionValidateDto validateDto);

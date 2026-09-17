@@ -17,10 +17,14 @@ namespace CinemaBooking.API.Mappings
                 .ForMember(dest => dest.TicketType, opt => opt.MapFrom(src => src.Price != null ? src.Price.TicketType : string.Empty))
                 .ForMember(dest => dest.TotalSeats, opt => opt.MapFrom(src => (src.Hall != null && src.Hall.Seats != null) ? src.Hall.Seats.Count : 0))
                 .ForMember(dest => dest.AvailableSeats, opt => opt.Ignore())
-                .ForMember(dest => dest.Hall, opt => opt.MapFrom(src => src.Hall));
+                .ForMember(dest => dest.Hall, opt => opt.MapFrom(src => src.Hall))
+                .ForMember(dest => dest.Movie, opt => opt.MapFrom(src => src.Movie));
 
             CreateMap<ShowtimeCreateDto, Showtime>();
             CreateMap<ShowtimeUpdateDto, Showtime>();
+
+            CreateMap<PricingRule, PricingRuleDto>();
+            CreateMap<PricingRuleCreateUpdateDto, PricingRule>();
         }
     }
 }

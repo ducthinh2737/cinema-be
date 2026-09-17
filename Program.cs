@@ -56,6 +56,7 @@ namespace CinemaBooking.API
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
             builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+            builder.Services.AddScoped<IComboRepository, ComboRepository>();
 
             // Add Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -64,15 +65,24 @@ namespace CinemaBooking.API
             builder.Services.AddScoped<IPaymentService, PaymentService>();
             builder.Services.AddScoped<INotificationService, CinemaBooking.API.Services.Implementations.NotificationService>();
             builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
+            builder.Services.AddScoped<CinemaBooking.API.Services.Implementations.BatchShowtimes.ShowtimeBatchValidator>();
+            builder.Services.AddScoped<CinemaBooking.API.Services.Implementations.BatchShowtimes.ConflictDetectionService>();
+            builder.Services.AddScoped<CinemaBooking.API.Services.Implementations.BatchShowtimes.BatchShowtimeEngine>();
+            builder.Services.AddScoped<IBatchShowtimeService, CinemaBooking.API.Services.Implementations.BatchShowtimes.BatchShowtimeService>();
+            builder.Services.AddScoped<CinemaBooking.API.Application.Common.Interfaces.IDistributedLock, CinemaBooking.API.Infrastructure.Locking.SqlDistributedLock>();
+            builder.Services.AddScoped<CinemaBooking.API.Application.Common.Interfaces.IEventBus, CinemaBooking.API.Infrastructure.EventBus.SignalREventBus>();
             builder.Services.AddScoped<ISeatLockService, SeatLockService>();
             builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
             builder.Services.AddScoped<ICinemaService, CinemaService>();
             builder.Services.AddScoped<IPromotionService, PromotionService>();
+            builder.Services.AddScoped<IPricingService, PricingService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
+            builder.Services.AddScoped<IComboService, ComboService>();
             builder.Services.AddScoped<JwtHelper>();
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
             builder.Services.AddScoped<ISlugService, SlugService>();
+            builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
  
             // Add Distributed Caching
             builder.Services.AddDistributedMemoryCache();
@@ -80,6 +90,8 @@ namespace CinemaBooking.API
  
             // Add Background Services
             builder.Services.AddHostedService<BookingExpirationService>();
+            builder.Services.AddHostedService<CinemaBooking.API.Infrastructure.Outbox.OutboxProcessor>();
+            builder.Services.AddHostedService<LoyaltyPointsReleaseWorker>();
 
             // Add JWT Authentication
             var jwtSettings = builder.Configuration.GetSection("JwtSettings");

@@ -30,6 +30,19 @@ namespace CinemaBooking.API.Services.Interfaces
         public string? AdminNotes { get; set; }
     }
 
+    public class SePayWebhookDto
+    {
+        public long Id { get; set; }
+        public string? Gateway { get; set; }
+        public string? TransactionDate { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? TransferType { get; set; }
+        public decimal TransferAmount { get; set; }
+        public decimal AccumulatedBalance { get; set; }
+        public string? Content { get; set; }
+        public string? ReferenceCode { get; set; }
+    }
+
     /// <summary>
     /// Service for handling VietQR payments, expirations, and confirmation workflows.
     /// </summary>
@@ -38,6 +51,7 @@ namespace CinemaBooking.API.Services.Interfaces
         Task<VietQRPaymentResponseDto> CreateVietQRPaymentAsync(int bookingId);
         Task<PaymentResponseDto> ConfirmPaymentAsync(int bookingId);
         Task ExpirePendingPaymentsAsync();
+        Task<PaymentResponseDto> ProcessSePayWebhookAsync(SePayWebhookDto dto);
 
         // Backward compatibility signatures for other controllers
         Task<string> CreateVietQRPaymentUrlAsync(int bookingId);

@@ -13,8 +13,8 @@ namespace CinemaBooking.API.Data.Seeders
             );
 
             modelBuilder.Entity<Cinema>().HasData(
-                new Cinema { CinemaId = 1, CinemaName = "Cinema Center District 1", Address = "123 Le Loi", CityId = 1 },
-                new Cinema { CinemaId = 2, CinemaName = "Cinema Center Dong Da", Address = "456 Nguyen Trai", CityId = 2 }
+                new Cinema { CinemaId = 1, CinemaName = "Cinema 1", Address = "123 Le Loi", CityId = 1 },
+                new Cinema { CinemaId = 2, CinemaName = "Cinema 2", Address = "456 Nguyen Trai", CityId = 2 }
             );
         }
     }

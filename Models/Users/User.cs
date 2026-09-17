@@ -26,8 +26,13 @@ namespace CinemaBooking.API.Models.Users
         public bool IsActive { get; set; }
 
         public int MembershipPoints { get; set; }
+        public int LifetimePoints { get; set; } = 0;
+        public int? MemberTierId { get; set; }
+        public MemberTier? MemberTier { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public ICollection<LoyaltyTransaction> LoyaltyTransactions { get; set; } = new List<LoyaltyTransaction>();
 
         public string? EmailVerificationToken { get; set; }
 

@@ -14,6 +14,10 @@ namespace CinemaBooking.API.Mappings
 
             CreateMap<ReviewCreateDto, Review>();
             CreateMap<ReviewUpdateDto, Review>();
+
+            CreateMap<ReviewReply, ReviewReplyDto>()
+                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User.FullName))
+                .ForMember(dest => dest.ParentReplyUserName, opt => opt.MapFrom(src => src.ParentReply != null ? src.ParentReply.User.FullName : null));
         }
     }
 }

@@ -1,63 +1,85 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using CinemaBooking.API.Data;
-using CinemaBooking.API.DTOs.Movies;
 using CinemaBooking.API.DTOs.Showtimes;
+using CinemaBooking.API.DTOs.Movies;
 using CinemaBooking.API.Models.Showtimes;
-using CinemaBooking.API.Repositories.Interfaces;
+using CinemaBooking.API.Models.Movies;
+using CinemaBooking.API.Models.Cinemas;
 using CinemaBooking.API.Services.Interfaces;
-using CinemaBooking.API.SignalR;
+using CinemaBooking.API.Domain.Exceptions;
+using CinemaBooking.API.Domain.Policies;
+using CinemaBooking.API.Application.Common.Interfaces;
+using CinemaBooking.API.Infrastructure.Outbox;
 
 namespace CinemaBooking.API.Services.Implementations
 {
-    /// <summary>
-    /// Enterprise Showtime Scheduling Service that ensures conflict-free scheduling,
-    /// optimized database queries, transaction safety, and realtime updates.
-    /// </summary>
+    public static class ShowtimeConstants
+    {
+        public static class Statuses
+        {
+            public const string Upcoming = "Upcoming";
+            public const string NowShowing = "NowShowing";
+            public const string Ended = "Ended";
+        }
+
+        public static class SignalREvents
+        {
+            public const string ShowtimeCreated = "ShowtimeCreated";
+            public const string ShowtimeUpdated = "ShowtimeUpdated";
+            public const string ShowtimeDeleted = "ShowtimeDeleted";
+            public const string BulkShowtimesCreated = "BulkShowtimesCreated";
+        }
+    }
+
+    public static class BookingConstants
+    {
+        public const string Cancelled = "Cancelled";
+    }
+
     public class ShowtimeService : IShowtimeService
     {
         private readonly CinemaDbContext _context;
-        private readonly IShowtimeRepository _showtimeRepository;
-        private readonly IMovieRepository _movieRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<ShowtimeService> _logger;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly ISeatLockService _seatLockService;
+        private readonly IDistributedLock _distributedLock;
+        private readonly TimeProvider _timeProvider;
 
         public ShowtimeService(
             CinemaDbContext context,
-            IShowtimeRepository showtimeRepository,
-            IMovieRepository movieRepository,
             IMapper mapper,
             ILogger<ShowtimeService> logger,
-            IServiceProvider serviceProvider)
+            ISeatLockService seatLockService,
+            IDistributedLock distributedLock,
+            TimeProvider? timeProvider = null)
         {
-            _context = context;
-            _showtimeRepository = showtimeRepository;
-            _movieRepository = movieRepository;
-            _mapper = mapper;
-            _logger = logger;
-            _serviceProvider = serviceProvider;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _seatLockService = seatLockService ?? throw new ArgumentNullException(nameof(seatLockService));
+            _distributedLock = distributedLock ?? throw new ArgumentNullException(nameof(distributedLock));
+            _timeProvider = timeProvider ?? TimeProvider.System;
         }
 
         #region Public Interface Query Methods
 
-        /// <summary>
-        /// Retrieves paginated list of showtimes based on advanced filters, search terms, and sorting options.
-        /// </summary>
-        public async Task<ApiResponse<PagedResultDto<ShowtimeDto>>> GetPagedShowtimesAsync(ShowtimeQueryParameters queryParams)
+        public async Task<ApiResponse<PagedResultDto<ShowtimeDto>>> GetPagedShowtimesAsync(
+            ShowtimeQueryParameters queryParams, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Retrieving paginated showtimes for Page Number: {PageNumber}", queryParams.PageNumber);
 
             var query = _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .AsNoTracking();
 
@@ -75,13 +97,14 @@ namespace CinemaBooking.API.Services.Implementations
             if (queryParams.Date.HasValue)
             {
                 var targetDate = queryParams.Date.Value.Date;
-                query = query.Where(s => s.StartTime.Date == targetDate);
+                var nextDate = targetDate.AddDays(1);
+                query = query.Where(s => s.StartTime >= targetDate && s.StartTime < nextDate);
             }
 
-            // Filter by dynamic Status
+            // Filter by dynamic Status using TimeProvider abstraction
             if (!string.IsNullOrEmpty(queryParams.Status))
             {
-                var now = DateTime.UtcNow;
+                var now = _timeProvider.GetUtcNow().UtcDateTime;
                 query = queryParams.Status.ToLower() switch
                 {
                     "upcoming" => query.Where(s => s.StartTime > now),
@@ -91,11 +114,11 @@ namespace CinemaBooking.API.Services.Implementations
                 };
             }
 
-            // Search support (Movie title or Hall name)
+            // Search support
             if (!string.IsNullOrEmpty(queryParams.SearchTerm))
             {
-                var search = queryParams.SearchTerm.ToLower();
-                query = query.Where(s => s.Movie.Title.ToLower().Contains(search) || s.Hall.HallName.ToLower().Contains(search));
+                var search = queryParams.SearchTerm;
+                query = query.Where(s => s.Movie.Title.Contains(search) || s.Hall.HallName.Contains(search));
             }
 
             // Sorting
@@ -114,13 +137,13 @@ namespace CinemaBooking.API.Services.Implementations
                 query = query.OrderBy(s => s.StartTime);
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(cancellationToken);
             var items = await query
                 .Skip((queryParams.PageNumber - 1) * queryParams.PageSize)
                 .Take(queryParams.PageSize)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            var dtos = await MapShowtimesToDtosAsync(items);
+            var dtos = await MapShowtimesToDtosAsync(items, cancellationToken);
 
             var pagedResult = new PagedResultDto<ShowtimeDto>
             {
@@ -133,64 +156,70 @@ namespace CinemaBooking.API.Services.Implementations
             return ApiResponse.Success(pagedResult);
         }
 
-        /// <summary>
-        /// Gets a showtime by its identifier.
-        /// </summary>
-        public async Task<ApiResponse<ShowtimeDto>> GetShowtimeByIdAsync(int id)
+        public async Task<ApiResponse<ShowtimeDto>> GetShowtimeByIdAsync(
+            int id, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Retrieving showtime by ID: {ShowtimeId}", id);
 
             var showtime = await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.ShowtimeId == id);
+                .FirstOrDefaultAsync(s => s.ShowtimeId == id, cancellationToken);
 
             if (showtime == null)
             {
                 throw new NotFoundException($"Không tìm thấy suất chiếu có ID {id}.");
             }
 
-            var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { showtime });
+            var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { showtime }, cancellationToken);
             return ApiResponse.Success(dtos.First());
         }
 
-        /// <summary>
-        /// Retrieves all showtimes for a specific Movie ID.
-        /// </summary>
-        public async Task<ApiResponse<IEnumerable<ShowtimeDto>>> GetShowtimesByMovieIdAsync(int movieId)
+        public async Task<ApiResponse<IEnumerable<ShowtimeDto>>> GetShowtimesByMovieIdAsync(
+            int movieId, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Retrieving showtimes for Movie ID: {MovieId}", movieId);
 
+            var today = DateTime.UtcNow.Date;
             var showtimes = await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
-                .Where(s => s.MovieId == movieId)
+                .Where(s => s.MovieId == movieId && s.StartTime >= today)
+                .OrderBy(s => s.StartTime)
+                .Take(100)
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            var dtos = await MapShowtimesToDtosAsync(showtimes);
+            var dtos = await MapShowtimesToDtosAsync(showtimes, cancellationToken);
             return ApiResponse.Success<IEnumerable<ShowtimeDto>>(dtos);
         }
 
-        /// <summary>
-        /// Retrieves all showtimes for a specific Cinema ID.
-        /// </summary>
-        public async Task<ApiResponse<IEnumerable<ShowtimeDto>>> GetShowtimesByCinemaIdAsync(int cinemaId)
+        public async Task<ApiResponse<IEnumerable<ShowtimeDto>>> GetShowtimesByCinemaIdAsync(
+            int cinemaId, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Retrieving showtimes for Cinema ID: {CinemaId}", cinemaId);
 
+            var today = DateTime.UtcNow.Date;
             var showtimes = await _context.Showtimes
                 .Include(s => s.Movie)
                 .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                .Include(s => s.Hall).ThenInclude(h => h.HallType)
                 .Include(s => s.Price)
-                .Where(s => s.Hall.CinemaId == cinemaId)
+                .Where(s => s.Hall.CinemaId == cinemaId && s.StartTime >= today)
+                .OrderBy(s => s.StartTime)
+                .Take(100)
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
-            var dtos = await MapShowtimesToDtosAsync(showtimes);
+            var dtos = await MapShowtimesToDtosAsync(showtimes, cancellationToken);
             return ApiResponse.Success<IEnumerable<ShowtimeDto>>(dtos);
         }
 
@@ -198,89 +227,413 @@ namespace CinemaBooking.API.Services.Implementations
 
         #region Public Mutation Methods
 
-        /// <summary>
-        /// Creates a new showtime and schedules it in the system.
-        /// Checks for conflicts and broadcasts updates via SignalR.
-        /// </summary>
-        public async Task<ApiResponse<ShowtimeDto>> CreateShowtimeAsync(ShowtimeCreateDto createDto)
+        public async Task<ApiResponse<ShowtimeDto>> CreateShowtimeAsync(
+            ShowtimeCreateDto createDto, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Creating showtime in Hall {HallId} at {StartTime}", createDto.HallId, createDto.StartTime);
 
-            // Business validation
-            await ValidateShowtimeAsync(createDto);
+            var movie = await ValidateAndLoadShowtimePrerequisitesAsync(createDto, cancellationToken);
+            var endTime = ShowtimeSchedulingPolicy.CalculateEndTime(movie, createDto.StartTime);
 
-            var endTime = await CalculateEndTime(createDto.MovieId, createDto.StartTime);
-
-            // Double conflict check
-            var conflictResult = await CheckScheduleConflictAsync(createDto.HallId, createDto.StartTime, endTime);
-            if (conflictResult.Data)
+            var lockKey = $"lock:hall:{createDto.HallId}";
+            using (await _distributedLock.AcquireLockAsync(lockKey, TimeSpan.FromSeconds(10), cancellationToken))
             {
-                throw new BusinessException("Lịch chiếu bị trùng hoặc quá gần lịch chiếu khác trong sảnh này (yêu cầu khoảng dọn dẹp 15 phút).");
-            }
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var showtime = _mapper.Map<Showtime>(createDto);
-                showtime.EndTime = endTime;
-
-                await _context.Showtimes.AddAsync(showtime);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                // Load with details for response
-                var savedShowtime = await _context.Showtimes
-                    .Include(s => s.Movie)
-                    .Include(s => s.Hall).ThenInclude(h => h.Cinema)
-                    .Include(s => s.Price)
-                    .FirstOrDefaultAsync(s => s.ShowtimeId == showtime.ShowtimeId);
-
-                var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { savedShowtime ?? showtime });
-                var resultDto = dtos.First();
-
-                // Broadcast change via SignalR
-                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
-                if (hubContext != null)
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
                 {
-                    await hubContext.Clients.All.SendAsync("ShowtimeCreated", resultDto);
-                }
+                    // Check conflict safely within locked transaction using Domain Policy logic
+                    var conflictExists = await CheckOverlappingScheduleAsync(createDto.HallId, createDto.StartTime, endTime, null, cancellationToken);
+                    if (conflictExists)
+                    {
+                        throw new BusinessException("Lịch chiếu bị trùng hoặc quá gần lịch chiếu khác trong sảnh này (yêu cầu khoảng dọn dẹp 15 phút).");
+                    }
 
-                _logger.LogInformation("Showtime created successfully with ID {ShowtimeId}", showtime.ShowtimeId);
-                return ApiResponse.Success(resultDto);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred during showtime creation.");
-                throw;
+                    var showtime = _mapper.Map<Showtime>(createDto);
+                    showtime.EndTime = endTime;
+
+                    await _context.Showtimes.AddAsync(showtime, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    var savedShowtime = await _context.Showtimes
+                        .Include(s => s.Movie)
+                        .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                        .Include(s => s.Hall).ThenInclude(h => h.HallType)
+                        .Include(s => s.Price)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.ShowtimeId == showtime.ShowtimeId, cancellationToken);
+
+                    var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { savedShowtime ?? showtime }, cancellationToken);
+                    var resultDto = dtos.First();
+
+                    // Queue Outbox Event in the same transaction
+                    var outboxEvent = new OutboxEvent
+                    {
+                        Id = Guid.NewGuid(),
+                        EventName = ShowtimeConstants.SignalREvents.ShowtimeCreated,
+                        Payload = System.Text.Json.JsonSerializer.Serialize(resultDto),
+                        OccurredOn = DateTime.UtcNow
+                    };
+                    await _context.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    _logger.LogInformation("Showtime created successfully with ID {ShowtimeId}", showtime.ShowtimeId);
+                    return ApiResponse.Success(resultDto);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    _logger.LogError(ex, "Error occurred during showtime creation for Hall ID {HallId}.", createDto.HallId);
+                    throw;
+                }
             }
         }
 
-        /// <summary>
-        /// Updates an existing showtime schedule.
-        /// </summary>
-        public async Task<ApiResponse<ShowtimeDto>> UpdateShowtimeAsync(int id, ShowtimeUpdateDto updateDto)
+        public async Task<ApiResponse<string>> CreateBulkShowtimesAsync(
+            ShowtimeBulkCreateDto bulkDto,
+            CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Bulk creating showtimes for Hall {HallId}, Movie {MovieId}", bulkDto.HallId, bulkDto.MovieId);
+
+            // Fetch prerequisites: Movie, Hall, Price
+            var movie = await _context.Movies
+                .Include(m => m.MovieFormats)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == bulkDto.MovieId && !m.IsDeleted, cancellationToken);
+            if (movie == null)
+            {
+                throw new ValidationException($"Phim có ID {bulkDto.MovieId} không tồn tại hoặc đã bị ẩn.");
+            }
+
+            var hall = await _context.Halls
+                .Include(h => h.Cinema)
+                .Include(h => h.HallType)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(h => h.HallId == bulkDto.HallId, cancellationToken);
+            if (hall == null || hall.IsDeleted)
+            {
+                throw new ValidationException($"Sảnh chiếu có ID {bulkDto.HallId} không tồn tại hoặc đã bị ẩn.");
+            }
+
+            if (hall.Cinema == null || hall.Cinema.IsDeleted)
+            {
+                throw new ValidationException("Rạp chiếu của sảnh này hiện tại đang bị dừng hoạt động.");
+            }
+
+            var price = await _context.Prices.AsNoTracking().FirstOrDefaultAsync(p => p.PriceId == bulkDto.PriceId, cancellationToken);
+            if (price == null)
+            {
+                throw new ValidationException($"Mức giá cấu hình có ID {bulkDto.PriceId} không tồn tại.");
+            }
+
+            // Validate format compatibility
+            string format = "2D"; // Default fallback
+            if (!string.IsNullOrEmpty(price.TicketType))
+            {
+                if (price.TicketType.Trim().StartsWith("{"))
+                {
+                    try
+                    {
+                        var obj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(price.TicketType);
+                        if (obj != null && obj.TryGetValue("roomType", out var roomType))
+                        {
+                            format = roomType;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback
+                    }
+                }
+                
+                if (format == "2D" || format == "Standard" || format == "VIP")
+                {
+                    format = "2D";
+                    string upperType = price.TicketType.ToUpper();
+                    if (upperType.Contains("IMAX")) format = "IMAX";
+                    else if (upperType.Contains("3D")) format = "3D";
+                }
+            }
+
+            var supportedFormats = new List<string>();
+            if (!string.IsNullOrEmpty(hall.Description) && hall.Description.Trim().StartsWith("{"))
+            {
+                try
+                {
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(hall.Description);
+                    if (obj != null && obj.TryGetValue("supportedFormats", out var formatsObj) && formatsObj is System.Text.Json.JsonElement elem && elem.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var item in elem.EnumerateArray())
+                        {
+                            if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                supportedFormats.Add(item.GetString()!);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fallback
+                }
+            }
+
+            if (supportedFormats.Count == 0)
+            {
+                string typeName = (hall.HallType?.TypeName ?? "").ToUpper();
+                if (typeName.Contains("IMAX"))
+                {
+                    supportedFormats.AddRange(new[] { "IMAX", "3D", "2D" });
+                }
+                else
+                {
+                    supportedFormats.AddRange(new[] { "2D", "3D" });
+                }
+            }
+
+            if (movie.MovieFormats != null && movie.MovieFormats.Any())
+            {
+                var movieHasFormat = movie.MovieFormats.Any(f => f.FormatName.Equals(format, StringComparison.OrdinalIgnoreCase));
+                if (!movieHasFormat)
+                {
+                    throw new ValidationException($"Phim '{movie.Title}' không hỗ trợ định dạng {format}.");
+                }
+            }
+
+            var hallHasFormat = supportedFormats.Any(f => f.Equals(format, StringComparison.OrdinalIgnoreCase));
+            if (!hallHasFormat)
+            {
+                throw new ValidationException($"Phòng chiếu '{hall.HallName}' không hỗ trợ định dạng {format}.");
+            }
+
+            var lockKey = $"lock:hall:{bulkDto.HallId}";
+            using (await _distributedLock.AcquireLockAsync(lockKey, TimeSpan.FromSeconds(15), cancellationToken))
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    // Fetch existing active showtimes for this hall
+                    var existingShowtimes = await _context.Showtimes
+                        .AsNoTracking()
+                        .Where(s => s.HallId == bulkDto.HallId)
+                        .Select(s => new { s.StartTime, s.EndTime })
+                        .ToListAsync(cancellationToken);
+
+                    var batchList = new List<Showtime>();
+                    int skippedCount = 0;
+                    var localTimeZone = ShowtimeSchedulingPolicy.LocalTimeZone;
+                    var skippedReasons = new List<string>();
+
+                    foreach (var date in bulkDto.Dates)
+                    {
+                        foreach (var slotStr in bulkDto.TimeSlots)
+                        {
+                            TimeSpan timeSpan;
+                            if (!TimeSpan.TryParse(slotStr, out timeSpan))
+                            {
+                                var parts = slotStr.Split(':');
+                                if (parts.Length >= 2 && int.TryParse(parts[0], out var hours) && int.TryParse(parts[1], out var minutes))
+                                {
+                                    int seconds = 0;
+                                    if (parts.Length > 2) int.TryParse(parts[2], out seconds);
+                                    timeSpan = new TimeSpan(hours, minutes, seconds);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("Invalid time slot string: {TimeSlot}", slotStr);
+                                    skippedCount++;
+                                    continue;
+                                }
+                            }
+
+                            // Convert to Vietnam local timezone date component
+                            var localDate = date.Kind == DateTimeKind.Utc
+                                ? TimeZoneInfo.ConvertTimeFromUtc(date, localTimeZone).Date
+                                : date.Date;
+
+                            var startLocal = localDate.Add(timeSpan);
+                            var startTimeUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(startLocal, DateTimeKind.Unspecified), localTimeZone);
+
+                            if (startTimeUtc <= _timeProvider.GetUtcNow().UtcDateTime)
+                            {
+                                _logger.LogWarning("Skipping time slot in the past: {StartTimeUtc}", startTimeUtc);
+                                skippedCount++;
+                                continue;
+                            }
+
+                            var endTime = ShowtimeSchedulingPolicy.CalculateEndTime(movie, startTimeUtc);
+
+                            // Validate release window and operating hours
+                            try
+                            {
+                                ShowtimeSchedulingPolicy.ValidateReleaseWindow(movie, startTimeUtc);
+                                if (hall.Cinema != null)
+                                {
+                                    ShowtimeSchedulingPolicy.ValidateOperatingHours(startTimeUtc, endTime, hall.Cinema);
+                                }
+                            }
+                            // BẮT LỖI GIỜ HOẠT ĐỘNG: Ngắt hẳn tiến trình sinh lịch của ngày này nếu vượt quá giờ đóng cửa rạp
+                            catch (ValidationException ex) when (ex.Message.Contains("hoạt động") || ex.Message.Contains("đóng cửa"))
+                            {
+                                _logger.LogInformation("Dừng xếp lịch tự động cho chuỗi ngày này do vi phạm giờ đóng cửa: {Msg}", ex.Message);
+                                skippedCount++;
+                                if (!skippedReasons.Contains(ex.Message))
+                                {
+                                    skippedReasons.Add(ex.Message);
+                                }
+                                break; 
+                            }
+                            catch (ValidationException ex)
+                            {
+                                _logger.LogWarning(ex, "Skipping slot due to validation: {StartTimeUtc}", startTimeUtc);
+                                skippedCount++;
+                                if (!skippedReasons.Contains(ex.Message))
+                                {
+                                    skippedReasons.Add(ex.Message);
+                                }
+                                continue;
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Skipping slot due to policy violation: {StartTimeUtc}", startTimeUtc);
+                                skippedCount++;
+                                if (!skippedReasons.Contains(ex.Message))
+                                {
+                                    skippedReasons.Add(ex.Message);
+                                }
+                                continue;
+                            }
+
+                            // Conflict overlap validation
+                            bool hasConflict = false;
+                            foreach (var existing in existingShowtimes)
+                            {
+                                if (ConflictPolicy.Overlaps(startTimeUtc, endTime, existing.StartTime, existing.EndTime, ShowtimeSchedulingPolicy.CleanUpBufferMinutes))
+                                {
+                                    hasConflict = true;
+                                    break;
+                                }
+                            }
+
+                            if (!hasConflict)
+                            {
+                                foreach (var batchItem in batchList)
+                                {
+                                    if (ConflictPolicy.Overlaps(startTimeUtc, endTime, batchItem.StartTime, batchItem.EndTime, ShowtimeSchedulingPolicy.CleanUpBufferMinutes))
+                                    {
+                                        hasConflict = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (hasConflict)
+                            {
+                                _logger.LogWarning("Skipping slot due to schedule conflict: Hall={HallId}, Start={Start}, End={End}", bulkDto.HallId, startTimeUtc, endTime);
+                                skippedCount++;
+                                string conflictMsg = "Trùng lịch chiếu với suất chiếu khác.";
+                                if (!skippedReasons.Contains(conflictMsg))
+                                {
+                                    skippedReasons.Add(conflictMsg);
+                                }
+                                continue;
+                            }
+
+                            var newShowtime = new Showtime
+                            {
+                                MovieId = bulkDto.MovieId,
+                                HallId = bulkDto.HallId,
+                                PriceId = bulkDto.PriceId,
+                                StartTime = startTimeUtc,
+                                EndTime = endTime,
+                                IsPriceOverride = bulkDto.FlatPriceEnabled,
+                                CustomPrice = bulkDto.FlatPriceEnabled ? bulkDto.FlatPrice : null
+                            };
+                            batchList.Add(newShowtime);
+                        }
+                    }
+
+                    if (batchList.Any())
+                    {
+                        await _context.Showtimes.AddRangeAsync(batchList, cancellationToken);
+                        await _context.SaveChangesAsync(cancellationToken);
+
+                        // Reload and map to ShowtimeDtos
+                        var insertedIds = batchList.Select(b => b.ShowtimeId).ToList();
+                        var savedShowtimes = await _context.Showtimes
+                            .Include(s => s.Movie)
+                            .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                            .Include(s => s.Hall).ThenInclude(h => h.HallType)
+                            .Include(s => s.Price)
+                            .Where(s => insertedIds.Contains(s.ShowtimeId))
+                            .AsNoTracking()
+                            .ToListAsync(cancellationToken);
+
+                        var dtos = await MapShowtimesToDtosAsync(savedShowtimes, cancellationToken);
+
+                        // Queue single Outbox Event
+                        var outboxEvent = new OutboxEvent
+                        {
+                            Id = Guid.NewGuid(),
+                            EventName = ShowtimeConstants.SignalREvents.BulkShowtimesCreated,
+                            Payload = System.Text.Json.JsonSerializer.Serialize(dtos),
+                            OccurredOn = DateTime.UtcNow
+                        };
+                        await _context.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    if (batchList.Count == 0)
+                    {
+                        var reasonMsg = skippedReasons.Any() 
+                            ? string.Join(" ", skippedReasons) 
+                            : "Trùng lịch chiếu, vi phạm giờ hoạt động hoặc ngày khởi chiếu.";
+                        return ApiResponse.Fail<string>($"Không có suất chiếu nào được tạo. Chi tiết: {reasonMsg}");
+                    }
+                    string successMessage = $"Tạo thành công {batchList.Count} suất chiếu. Bỏ qua {skippedCount} suất chiếu do trùng lịch hoặc không hợp lệ.";
+                    return ApiResponse.Success(successMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    _logger.LogError(ex, "Error occurred during bulk showtime creation for Hall ID {HallId}.", bulkDto.HallId);
+                    throw;
+                }
+            }
+        }
+
+        public async Task<ApiResponse<ShowtimeDto>> UpdateShowtimeAsync(
+            int id, 
+            ShowtimeUpdateDto updateDto, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Updating showtime ID {ShowtimeId}", id);
 
-            var showtime = await _context.Showtimes
-                .Include(s => s.Bookings)
-                .FirstOrDefaultAsync(s => s.ShowtimeId == id);
-
+            var showtime = await _context.Showtimes.FirstOrDefaultAsync(s => s.ShowtimeId == id, cancellationToken);
             if (showtime == null)
             {
                 throw new NotFoundException($"Không tìm thấy suất chiếu có ID {id}.");
             }
 
-            // Business check: Prevent changing scheduled details if active bookings exist
-            var hasBookings = showtime.Bookings.Any(b => b.BookingStatus != "Cancelled");
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
+            if (showtime.StartTime <= now)
+            {
+                throw new BusinessException("Không thể chỉnh sửa suất chiếu đã bắt đầu.");
+            }
+
+            var hasBookings = await _context.Bookings
+                .AsNoTracking()
+                .AnyAsync(b => b.ShowtimeId == id && b.BookingStatus != BookingConstants.Cancelled, cancellationToken);
+
             if (hasBookings)
             {
                 throw new BusinessException("Không thể sửa đổi thông tin suất chiếu đã phát sinh vé đặt của khách hàng.");
             }
 
-            // Business validation
             var createValidationDto = new ShowtimeCreateDto
             {
                 MovieId = updateDto.MovieId,
@@ -288,101 +641,143 @@ namespace CinemaBooking.API.Services.Implementations
                 PriceId = updateDto.PriceId,
                 StartTime = updateDto.StartTime
             };
-            await ValidateShowtimeAsync(createValidationDto);
+            var movie = await ValidateAndLoadShowtimePrerequisitesAsync(createValidationDto, cancellationToken);
+            var endTime = ShowtimeSchedulingPolicy.CalculateEndTime(movie, updateDto.StartTime);
 
-            var endTime = await CalculateEndTime(updateDto.MovieId, updateDto.StartTime);
-
-            // Conflict check
-            var conflictResult = await CheckScheduleConflictAsync(updateDto.HallId, updateDto.StartTime, endTime, id);
-            if (conflictResult.Data)
+            var lockKeys = new List<string> { $"lock:hall:{showtime.HallId}" };
+            if (showtime.HallId != updateDto.HallId)
             {
-                throw new BusinessException("Lịch chiếu bị trùng hoặc quá gần lịch chiếu khác trong sảnh này (yêu cầu khoảng dọn dẹp 15 phút).");
+                lockKeys.Add($"lock:hall:{updateDto.HallId}");
             }
+            lockKeys.Sort();
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var acquiredLocks = new List<IDisposable>();
             try
             {
-                _mapper.Map(updateDto, showtime);
-                showtime.EndTime = endTime;
-
-                _context.Showtimes.Update(showtime);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                // Load detail
-                var updated = await _context.Showtimes
-                    .Include(s => s.Movie)
-                    .Include(s => s.Hall).ThenInclude(h => h.Cinema)
-                    .Include(s => s.Price)
-                    .FirstOrDefaultAsync(s => s.ShowtimeId == id);
-
-                var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { updated ?? showtime });
-                var resultDto = dtos.First();
-
-                // Broadcast change via SignalR
-                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
-                if (hubContext != null)
+                foreach (var key in lockKeys)
                 {
-                    await hubContext.Clients.All.SendAsync("ShowtimeUpdated", resultDto);
+                    var l = await _distributedLock.AcquireLockAsync(key, TimeSpan.FromSeconds(10), cancellationToken);
+                    acquiredLocks.Add(l);
                 }
 
-                _logger.LogInformation("Showtime updated successfully with ID {ShowtimeId}", id);
-                return ApiResponse.Success(resultDto);
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    var conflictExists = await CheckOverlappingScheduleAsync(updateDto.HallId, updateDto.StartTime, endTime, id, cancellationToken);
+                    if (conflictExists)
+                    {
+                        throw new BusinessException("Lịch chiếu bị trùng hoặc quá gần lịch chiếu khác trong sảnh này (yêu cầu khoảng dọn dẹp 15 phút).");
+                    }
+
+                    _mapper.Map(updateDto, showtime);
+                    showtime.EndTime = endTime;
+
+                    _context.Showtimes.Update(showtime);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    var updated = await _context.Showtimes
+                        .Include(s => s.Movie)
+                        .Include(s => s.Hall).ThenInclude(h => h.Cinema)
+                        .Include(s => s.Hall).ThenInclude(h => h.HallType)
+                        .Include(s => s.Price)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.ShowtimeId == id, cancellationToken);
+
+                    var dtos = await MapShowtimesToDtosAsync(new List<Showtime> { updated ?? showtime }, cancellationToken);
+                    var resultDto = dtos.First();
+
+                    // Queue Outbox Event
+                    var outboxEvent = new OutboxEvent
+                    {
+                        Id = Guid.NewGuid(),
+                        EventName = ShowtimeConstants.SignalREvents.ShowtimeUpdated,
+                        Payload = System.Text.Json.JsonSerializer.Serialize(resultDto),
+                        OccurredOn = DateTime.UtcNow
+                    };
+                    await _context.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    _logger.LogInformation("Showtime updated successfully with ID {ShowtimeId}", id);
+                    return ApiResponse.Success(resultDto);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    _logger.LogError(ex, "Error occurred during showtime update for Showtime ID {ShowtimeId}.", id);
+                    throw;
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred during showtime update.");
-                throw;
+                foreach (var l in acquiredLocks)
+                {
+                    l.Dispose();
+                }
             }
         }
 
-        /// <summary>
-        /// Deletes an empty showtime schedule. Blocks deletion if showtime has active bookings.
-        /// </summary>
-        public async Task<ApiResponse<bool>> DeleteShowtimeAsync(int id)
+        public async Task<ApiResponse<bool>> DeleteShowtimeAsync(
+            int id, 
+            CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Deleting showtime ID {ShowtimeId}", id);
 
-            var showtime = await _context.Showtimes
-                .Include(s => s.Bookings)
-                .FirstOrDefaultAsync(s => s.ShowtimeId == id);
-
+            var showtime = await _context.Showtimes.FirstOrDefaultAsync(s => s.ShowtimeId == id, cancellationToken);
             if (showtime == null)
             {
                 throw new NotFoundException($"Không tìm thấy suất chiếu có ID {id}.");
             }
 
-            var hasBookings = showtime.Bookings.Any(b => b.BookingStatus != "Cancelled");
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
+            if (showtime.StartTime <= now)
+            {
+                throw new BusinessException("Không thể xóa suất chiếu đã bắt đầu.");
+            }
+
+            var hasBookings = await _context.Bookings
+                .AsNoTracking()
+                .AnyAsync(b => b.ShowtimeId == id && b.BookingStatus != BookingConstants.Cancelled, cancellationToken);
+
             if (hasBookings)
             {
                 throw new BusinessException("Không thể xóa suất chiếu đã có khách hàng đặt vé.");
             }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            var lockKey = $"lock:hall:{showtime.HallId}";
+            using (await _distributedLock.AcquireLockAsync(lockKey, TimeSpan.FromSeconds(10), cancellationToken))
             {
-                _context.Showtimes.Remove(showtime);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                // Broadcast deletion via SignalR
-                var hubContext = _serviceProvider.GetService<IHubContext<SeatHub>>();
-                if (hubContext != null)
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
                 {
-                    await hubContext.Clients.All.SendAsync("ShowtimeDeleted", id);
-                }
+                    showtime.IsDeleted = true;
+                    showtime.Status = "Cancelled";
+                    _context.Showtimes.Update(showtime);
+                    await _context.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Showtime deleted successfully with ID {ShowtimeId}", id);
-                return ApiResponse.Success(true, "Xóa suất chiếu thành công.");
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred during showtime deletion.");
-                throw;
+                    // Queue Outbox Event
+                    var outboxEvent = new OutboxEvent
+                    {
+                        Id = Guid.NewGuid(),
+                        EventName = ShowtimeConstants.SignalREvents.ShowtimeDeleted,
+                        Payload = System.Text.Json.JsonSerializer.Serialize(id),
+                        OccurredOn = DateTime.UtcNow
+                    };
+                    await _context.OutboxEvents.AddAsync(outboxEvent, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+
+                    _logger.LogInformation("Showtime deleted successfully with ID {ShowtimeId}", id);
+                    return ApiResponse.Success(true, "Xóa suất chiếu thành công.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    _logger.LogError(ex, "Error occurred during showtime deletion for Showtime ID {ShowtimeId}.", id);
+                    throw;
+                }
             }
         }
 
@@ -390,23 +785,32 @@ namespace CinemaBooking.API.Services.Implementations
 
         #region Validation, Conflict & Helper Systems
 
-        /// <summary>
-        /// Validates that movies, halls, prices exist, are active, and scheduled in the future.
-        /// </summary>
-        public async Task<ApiResponse<bool>> ValidateShowtimeAsync(ShowtimeCreateDto createDto)
+        private async Task<Movie> ValidateAndLoadShowtimePrerequisitesAsync(
+            ShowtimeCreateDto createDto, 
+            CancellationToken cancellationToken = default)
         {
-            if (createDto.StartTime <= DateTime.UtcNow)
+            if (createDto.StartTime <= _timeProvider.GetUtcNow().UtcDateTime)
             {
                 throw new ValidationException("Thời gian bắt đầu của suất chiếu phải ở trong tương lai.");
             }
 
-            var movie = await _context.Movies.FirstOrDefaultAsync(m => m.Id == createDto.MovieId && !m.IsDeleted);
+            var movie = await _context.Movies
+                .Include(m => m.MovieFormats)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == createDto.MovieId && !m.IsDeleted, cancellationToken);
             if (movie == null)
             {
                 throw new ValidationException($"Phim có ID {createDto.MovieId} không tồn tại hoặc đã bị ẩn.");
             }
 
-            var hall = await _context.Halls.Include(h => h.Cinema).FirstOrDefaultAsync(h => h.HallId == createDto.HallId);
+            // Enforce domain release window policy
+            ShowtimeSchedulingPolicy.ValidateReleaseWindow(movie, createDto.StartTime);
+
+            var hall = await _context.Halls
+                .Include(h => h.Cinema)
+                .Include(h => h.HallType)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(h => h.HallId == createDto.HallId, cancellationToken);
             if (hall == null || hall.IsDeleted)
             {
                 throw new ValidationException($"Sảnh chiếu có ID {createDto.HallId} không tồn tại hoặc đã bị ẩn.");
@@ -417,67 +821,172 @@ namespace CinemaBooking.API.Services.Implementations
                 throw new ValidationException("Rạp chiếu của sảnh này hiện tại đang bị dừng hoạt động.");
             }
 
-            var price = await _context.Prices.FindAsync(createDto.PriceId);
+            // Enforce operating hours policy
+            var endTime = ShowtimeSchedulingPolicy.CalculateEndTime(movie, createDto.StartTime);
+            ShowtimeSchedulingPolicy.ValidateOperatingHours(createDto.StartTime, endTime, hall.Cinema);
+
+            var price = await _context.Prices.AsNoTracking().FirstOrDefaultAsync(p => p.PriceId == createDto.PriceId, cancellationToken);
             if (price == null)
             {
                 throw new ValidationException($"Mức giá cấu hình có ID {createDto.PriceId} không tồn tại.");
             }
 
+            // Validate format compatibility
+            string format = "2D"; // Default fallback
+            if (!string.IsNullOrEmpty(price.TicketType))
+            {
+                if (price.TicketType.Trim().StartsWith("{"))
+                {
+                    try
+                    {
+                        var obj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(price.TicketType);
+                        if (obj != null && obj.TryGetValue("roomType", out var roomType))
+                        {
+                            format = roomType;
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback to text check
+                    }
+                }
+                
+                if (format == "2D" || format == "Standard" || format == "VIP") // If JSON parse failed or roomType is not set
+                {
+                    format = "2D";
+                    string upperType = price.TicketType.ToUpper();
+                    if (upperType.Contains("IMAX")) format = "IMAX";
+                    else if (upperType.Contains("3D")) format = "3D";
+                }
+            }
+
+            var supportedFormats = new List<string>();
+            if (!string.IsNullOrEmpty(hall.Description) && hall.Description.Trim().StartsWith("{"))
+            {
+                try
+                {
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(hall.Description);
+                    if (obj != null && obj.TryGetValue("supportedFormats", out var formatsObj) && formatsObj is System.Text.Json.JsonElement elem && elem.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var item in elem.EnumerateArray())
+                        {
+                            if (item.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                supportedFormats.Add(item.GetString()!);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fallback
+                }
+            }
+
+            if (supportedFormats.Count == 0)
+            {
+                string typeName = (hall.HallType?.TypeName ?? "").ToUpper();
+                if (typeName.Contains("IMAX"))
+                {
+                    supportedFormats.AddRange(new[] { "IMAX", "3D", "2D" });
+                }
+                else
+                {
+                    supportedFormats.AddRange(new[] { "2D", "3D" });
+                }
+            }
+
+            // Check 1: Format mismatch
+            if (movie.MovieFormats != null && movie.MovieFormats.Any())
+            {
+                var movieHasFormat = movie.MovieFormats.Any(f => f.FormatName.Equals(format, StringComparison.OrdinalIgnoreCase));
+                if (!movieHasFormat)
+                {
+                    throw new ValidationException($"Phim '{movie.Title}' không hỗ trợ định dạng {format}.");
+                }
+            }
+
+            var hallHasFormat = supportedFormats.Any(f => f.Equals(format, StringComparison.OrdinalIgnoreCase));
+            if (!hallHasFormat)
+            {
+                throw new ValidationException($"Phòng chiếu '{hall.HallName}' không hỗ trợ định dạng {format}.");
+            }
+
+            return movie;
+        }
+
+        public async Task<ApiResponse<bool>> ValidateShowtimeAsync(
+            ShowtimeCreateDto createDto, 
+            CancellationToken cancellationToken = default)
+        {
+            await ValidateAndLoadShowtimePrerequisitesAsync(createDto, cancellationToken);
             return ApiResponse.Success(true);
         }
 
-        /// <summary>
-        /// Evaluates scheduling overlaps inside the selected hall. Requires 15-minute gap for cleanup.
-        /// </summary>
-        public async Task<ApiResponse<bool>> CheckScheduleConflictAsync(int hallId, DateTime startTime, DateTime endTime, int? excludeShowtimeId = null)
+        public async Task<ApiResponse<bool>> CheckScheduleConflictAsync(
+            int hallId, 
+            DateTime startTime, 
+            DateTime endTime, 
+            int? excludeShowtimeId = null, 
+            CancellationToken cancellationToken = default)
         {
-            var endTimeWithBuffer = endTime.AddMinutes(15);
-
-            var conflictExists = await _context.Showtimes
-                .Where(s => s.HallId == hallId && s.ShowtimeId != excludeShowtimeId)
-                .Where(s => s.StartTime < endTimeWithBuffer && startTime < s.EndTime.AddMinutes(15))
-                .AnyAsync();
-
+            var conflictExists = await CheckOverlappingScheduleAsync(hallId, startTime, endTime, excludeShowtimeId, cancellationToken);
             return ApiResponse.Success(conflictExists);
         }
 
-        /// <summary>
-        /// Calculates showtime end time dynamically based on movie duration.
-        /// </summary>
-        public async Task<DateTime> CalculateEndTime(int movieId, DateTime startTime)
+        private async Task<bool> CheckOverlappingScheduleAsync(
+            int hallId, 
+            DateTime startTime, 
+            DateTime endTime, 
+            int? excludeShowtimeId = null, 
+            CancellationToken cancellationToken = default)
         {
-            var movie = await _context.Movies.FindAsync(movieId);
+            var existingShowtimes = await _context.Showtimes
+                .AsNoTracking()
+                .Where(s => s.HallId == hallId && s.ShowtimeId != excludeShowtimeId)
+                .Select(s => new { s.StartTime, s.EndTime })
+                .ToListAsync(cancellationToken);
+
+            return existingShowtimes.Any(s => ConflictPolicy.Overlaps(startTime, endTime, s.StartTime, s.EndTime, ShowtimeSchedulingPolicy.CleanUpBufferMinutes));
+        }
+
+        public async Task<DateTime> CalculateEndTime(
+            int movieId, 
+            DateTime startTime, 
+            CancellationToken cancellationToken = default)
+        {
+            var movie = await _context.Movies.AsNoTracking().FirstOrDefaultAsync(m => m.Id == movieId, cancellationToken);
             if (movie == null)
             {
                 throw new ValidationException("Không thể tính toán thời lượng cho bộ phim không tồn tại.");
             }
-            return startTime.AddMinutes(movie.Duration);
+            return ShowtimeSchedulingPolicy.CalculateEndTime(movie, startTime);
         }
 
-        /// <summary>
-        /// Calculates available seats for a showtime, taking into account booked seats and active locks.
-        /// </summary>
-        public async Task<ApiResponse<int>> CalculateAvailableSeatsAsync(int showtimeId)
+        public async Task<ApiResponse<int>> CalculateAvailableSeatsAsync(
+            int showtimeId, 
+            CancellationToken cancellationToken = default)
         {
-            var showtime = await _context.Showtimes.FindAsync(showtimeId);
-            if (showtime == null)
+            var showtimeInfo = await _context.Showtimes
+                .AsNoTracking()
+                .Where(s => s.ShowtimeId == showtimeId)
+                .Select(s => new { s.HallId, s.StartTime })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (showtimeInfo == null)
             {
                 throw new NotFoundException($"Không tìm thấy suất chiếu ID {showtimeId}.");
             }
 
-            var totalSeats = await _context.Seats.CountAsync(s => s.HallId == showtime.HallId && !s.IsDeleted);
+            var totalSeats = await _context.Seats.CountAsync(s => s.HallId == showtimeInfo.HallId && !s.IsDeleted, cancellationToken);
+            
             var bookedSeats = await _context.BookingSeats
-                .CountAsync(bs => bs.Booking.ShowtimeId == showtimeId && bs.Booking.BookingStatus != "Cancelled");
+                .CountAsync(bs => bs.Booking.ShowtimeId == showtimeId && bs.Booking.BookingStatus != BookingConstants.Cancelled, cancellationToken);
 
-            var lockedSeatsCount = 0;
-            var seatLockService = _serviceProvider.GetService<ISeatLockService>();
-            if (seatLockService != null)
-            {
-                var lockedSeats = await seatLockService.GetLockedSeatsAsync(showtimeId);
-                lockedSeatsCount = lockedSeats.Count();
-            }
+            var lockedSeats = await _seatLockService.GetLockedSeatsAsync(showtimeId, cancellationToken);
+            var lockedCount = lockedSeats.Count;
 
-            var available = Math.Max(0, totalSeats - bookedSeats - lockedSeatsCount);
+            var available = Math.Max(0, totalSeats - bookedSeats - lockedCount);
             return ApiResponse.Success(available);
         }
 
@@ -485,7 +994,9 @@ namespace CinemaBooking.API.Services.Implementations
 
         #region Internal Projection Mapping System
 
-        private async Task<List<ShowtimeDto>> MapShowtimesToDtosAsync(List<Showtime> items)
+        private async Task<List<ShowtimeDto>> MapShowtimesToDtosAsync(
+            List<Showtime> items, 
+            CancellationToken cancellationToken = default)
         {
             if (!items.Any()) return new List<ShowtimeDto>();
 
@@ -493,21 +1004,23 @@ namespace CinemaBooking.API.Services.Implementations
 
             // Bulk query booked seats count
             var bookedSeatsCounts = await _context.BookingSeats
-                .Where(bs => showtimeIds.Contains(bs.Booking.ShowtimeId) && bs.Booking.BookingStatus != "Cancelled")
+                .Where(bs => showtimeIds.Contains(bs.Booking.ShowtimeId) && bs.Booking.BookingStatus != BookingConstants.Cancelled)
                 .GroupBy(bs => bs.Booking.ShowtimeId)
                 .Select(g => new { ShowtimeId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.ShowtimeId, x => x.Count);
+                .ToDictionaryAsync(x => x.ShowtimeId, x => x.Count, cancellationToken);
 
-            // Bulk query locked seats count
+            // Parallel cached seat lock checks
             var lockedSeatsCounts = new Dictionary<int, int>();
-            var seatLockService = _serviceProvider.GetService<ISeatLockService>();
-            if (seatLockService != null)
+            var lockTasks = showtimeIds.Select(async id =>
             {
-                foreach (var id in showtimeIds)
-                {
-                    var locked = await seatLockService.GetLockedSeatsAsync(id);
-                    lockedSeatsCounts[id] = locked.Count();
-                }
+                var locked = await _seatLockService.GetLockedSeatsAsync(id, cancellationToken);
+                return new { ShowtimeId = id, Count = locked.Count };
+            });
+
+            var lockResults = await Task.WhenAll(lockTasks);
+            foreach (var res in lockResults)
+            {
+                lockedSeatsCounts[res.ShowtimeId] = res.Count;
             }
 
             // Bulk query total seats count for halls in this batch
@@ -516,10 +1029,10 @@ namespace CinemaBooking.API.Services.Implementations
                 .Where(s => hallIds.Contains(s.HallId) && !s.IsDeleted)
                 .GroupBy(s => s.HallId)
                 .Select(g => new { HallId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.HallId, x => x.Count);
+                .ToDictionaryAsync(x => x.HallId, x => x.Count, cancellationToken);
 
             var dtos = new List<ShowtimeDto>();
-            var nowTime = DateTime.UtcNow;
+            var nowTime = _timeProvider.GetUtcNow().UtcDateTime;
 
             foreach (var item in items)
             {
@@ -531,8 +1044,10 @@ namespace CinemaBooking.API.Services.Implementations
                 var locked = lockedSeatsCounts.TryGetValue(item.ShowtimeId, out var lCount) ? lCount : 0;
                 dto.AvailableSeats = Math.Max(0, dto.TotalSeats - booked - locked);
 
-                // Dynamically calculate status
-                dto.Status = item.StartTime > nowTime ? "Upcoming" : (item.EndTime < nowTime ? "Ended" : "NowShowing");
+                // Dynamically calculate status using constant values
+                dto.Status = item.StartTime > nowTime
+                    ? ShowtimeConstants.Statuses.Upcoming
+                    : (item.EndTime < nowTime ? ShowtimeConstants.Statuses.Ended : ShowtimeConstants.Statuses.NowShowing);
 
                 dtos.Add(dto);
             }

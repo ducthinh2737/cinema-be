@@ -66,6 +66,18 @@ namespace CinemaBooking.API.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [HttpPatch("{id:int}/toggle-status")]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var updatedPromo = await _promotionService.TogglePromotionStatusAsync(id);
+            if (updatedPromo == null)
+            {
+                return NotFound(new { Message = $"Promotion with ID {id} not found." });
+            }
+            return Ok(updatedPromo);
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeletePromotion(int id)
         {
@@ -86,6 +98,10 @@ namespace CinemaBooking.API.Controllers
             }
 
             var result = await _promotionService.ValidatePromotionAsync(validateDto);
+            if (!result.IsValid)
+            {
+                return BadRequest(new { Message = result.Message });
+            }
             return Ok(result);
         }
 

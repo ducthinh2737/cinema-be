@@ -86,6 +86,50 @@ namespace CinemaBooking.API.Services.Implementations
             return _mapper.Map<CinemaDto>(cinema);
         }
 
+        public async Task<CinemaDto?> UpdateCinemaLogoAsync(int id, string logoUrl)
+        {
+            var cinema = await _cinemaRepository.GetCinemaByIdAsync(id);
+            if (cinema == null) return null;
+
+            cinema.LogoUrl = logoUrl;
+            await _cinemaRepository.UpdateCinemaAsync(cinema);
+            await _cinemaRepository.SaveChangesAsync();
+
+            return _mapper.Map<CinemaDto>(cinema);
+        }
+
+        public async Task<CinemaDto?> UpdateCinemaBannerAsync(int id, string bannerUrl)
+        {
+            var cinema = await _cinemaRepository.GetCinemaByIdAsync(id);
+            if (cinema == null) return null;
+
+            cinema.BannerUrl = bannerUrl;
+            await _cinemaRepository.UpdateCinemaAsync(cinema);
+            await _cinemaRepository.SaveChangesAsync();
+
+            return _mapper.Map<CinemaDto>(cinema);
+        }
+
+        public async Task<CinemaDto?> AddCinemaGalleryImageAsync(int id, string imageUrl)
+        {
+            var cinema = await _cinemaRepository.GetCinemaByIdAsync(id);
+            if (cinema == null) return null;
+
+            if (string.IsNullOrEmpty(cinema.GalleryUrls))
+            {
+                cinema.GalleryUrls = imageUrl;
+            }
+            else
+            {
+                cinema.GalleryUrls += "," + imageUrl;
+            }
+
+            await _cinemaRepository.UpdateCinemaAsync(cinema);
+            await _cinemaRepository.SaveChangesAsync();
+
+            return _mapper.Map<CinemaDto>(cinema);
+        }
+
         // Hall
         public async Task<IEnumerable<HallDto>> GetHallsByCinemaIdAsync(int cinemaId)
         {

@@ -10,7 +10,6 @@ namespace CinemaBooking.API.Data.Configurations
         {
             builder.HasKey(st => st.SeatTypeId);
             builder.Property(st => st.TypeName).IsRequired().HasMaxLength(50);
-            builder.Property(st => st.PriceMultiplier).HasColumnType("decimal(18,2)");
 
             // Global Query Filter for Soft Delete
             builder.HasQueryFilter(st => !st.IsDeleted);

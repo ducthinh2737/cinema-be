@@ -57,10 +57,12 @@ namespace CinemaBooking.API.Services.Implementations
         public async Task<ApiResponse<PagedResultDto<MovieDto>>> GetPagedMoviesAsync(MovieQueryParameters queryParams)
         {
             _logger.LogInformation("Retrieving paginated movies. Page: {Page}", queryParams.PageNumber);
+            var now = DateTime.UtcNow;
 
             var query = _context.Movies
                 .Include(m => m.Genre)
                 .Include(m => m.Director)
+                .Include(m => m.MovieFormats)
                 .AsSplitQuery()
                 .AsNoTracking();
 
@@ -97,13 +99,12 @@ namespace CinemaBooking.API.Services.Implementations
             if (!string.IsNullOrEmpty(queryParams.Status))
             {
                 var statusLower = queryParams.Status.ToLower();
-                var now = DateTime.UtcNow;
                 query = statusLower switch
                 {
-                    "comingsoon" => query.Where(m => m.Status == "ComingSoon"),
-                    "nowshowing" => query.Where(m => m.Status == "NowShowing"),
-                    "ended" => query.Where(m => m.Status == "Ended"),
-                    "hidden" => query.IgnoreQueryFilters().Where(m => m.IsDeleted),
+                    "comingsoon" => query.Where(m => m.Status != "Hidden" && m.ReleaseDate > now),
+                    "nowshowing" => query.Where(m => m.Status != "Hidden" && m.ReleaseDate <= now && m.EndDate >= now),
+                    "ended" => query.Where(m => m.Status != "Hidden" && m.EndDate < now),
+                    "hidden" => query.IgnoreQueryFilters().Where(m => m.IsDeleted || m.Status == "Hidden"),
                     "special" => query.Where(m => m.ReleaseDate > now && m.Showtimes.Any(s => s.StartTime >= now)),
                     _ => query
                 };
@@ -137,7 +138,22 @@ namespace CinemaBooking.API.Services.Implementations
             foreach (var dto in dtos)
             {
                 var movieItem = items.First(x => x.Id == dto.Id);
-                dto.Status = movieItem.IsDeleted ? "Hidden" : movieItem.Status;
+                if (movieItem.IsDeleted || movieItem.Status == "Hidden")
+                {
+                    dto.Status = "Hidden";
+                }
+                else if (movieItem.ReleaseDate > now)
+                {
+                    dto.Status = "ComingSoon";
+                }
+                else if (movieItem.EndDate < now)
+                {
+                    dto.Status = "Ended";
+                }
+                else
+                {
+                    dto.Status = "NowShowing";
+                }
             }
 
             var pagedResult = new PagedResultDto<MovieDto>
@@ -162,6 +178,7 @@ namespace CinemaBooking.API.Services.Implementations
                 .Include(m => m.Genre)
                 .Include(m => m.Director)
                 .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
+                .Include(m => m.MovieFormats)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
@@ -170,10 +187,54 @@ namespace CinemaBooking.API.Services.Implementations
             }
 
             var dto = _mapper.Map<MovieDetailDto>(movie);
-            dto.Status = movie.IsDeleted ? "Hidden" : movie.Status;
+            var now = DateTime.UtcNow;
+            dto.Status = movie.IsDeleted || movie.Status == "Hidden" ? "Hidden"
+                         : movie.ReleaseDate > now ? "ComingSoon"
+                         : movie.EndDate < now ? "Ended"
+                         : "NowShowing";
 
             // Populate analytics
             dto.Analytics = await CalculateMovieAnalyticsAsync(id);
+
+            // Populate review rating and summary details
+            var summary = await _context.Reviews
+                .AsNoTracking()
+                .Where(r => r.MovieId == movie.Id && !r.IsDeleted && r.Status == "Approved")
+                .GroupBy(r => r.MovieId)
+                .Select(g => new CinemaBooking.API.DTOs.Reviews.MovieRatingSummaryDto
+                {
+                    TotalReviews = g.Count(),
+                    AverageRating = g.Average(r => (double)r.Rating),
+                    FiveStarCount = g.Count(r => r.Rating == 5),
+                    FourStarCount = g.Count(r => r.Rating == 4),
+                    ThreeStarCount = g.Count(r => r.Rating == 3),
+                    TwoStarCount = g.Count(r => r.Rating == 2),
+                    OneStarCount = g.Count(r => r.Rating == 1)
+                })
+                .FirstOrDefaultAsync();
+
+            if (summary != null)
+            {
+                summary.AverageRating = Math.Round(summary.AverageRating, 1, MidpointRounding.AwayFromZero);
+                dto.AverageRating = summary.AverageRating;
+                dto.ReviewCount = summary.TotalReviews;
+                dto.RatingSummary = summary;
+            }
+            else
+            {
+                dto.AverageRating = 0.0;
+                dto.ReviewCount = 0;
+                dto.RatingSummary = new CinemaBooking.API.DTOs.Reviews.MovieRatingSummaryDto
+                {
+                    AverageRating = 0.0,
+                    TotalReviews = 0,
+                    FiveStarCount = 0,
+                    FourStarCount = 0,
+                    ThreeStarCount = 0,
+                    TwoStarCount = 0,
+                    OneStarCount = 0
+                };
+            }
 
             return ApiResponse.Success(dto);
         }
@@ -189,6 +250,7 @@ namespace CinemaBooking.API.Services.Implementations
                 .Include(m => m.Genre)
                 .Include(m => m.Director)
                 .Include(m => m.MovieActors).ThenInclude(ma => ma.Actor)
+                .Include(m => m.MovieFormats)
                 .FirstOrDefaultAsync(m => m.Slug == slug);
 
             if (movie == null)
@@ -197,10 +259,54 @@ namespace CinemaBooking.API.Services.Implementations
             }
 
             var dto = _mapper.Map<MovieDetailDto>(movie);
-            dto.Status = movie.IsDeleted ? "Hidden" : movie.Status;
+            var now = DateTime.UtcNow;
+            dto.Status = movie.IsDeleted || movie.Status == "Hidden" ? "Hidden"
+                         : movie.ReleaseDate > now ? "ComingSoon"
+                         : movie.EndDate < now ? "Ended"
+                         : "NowShowing";
 
             // Populate analytics
             dto.Analytics = await CalculateMovieAnalyticsAsync(movie.Id);
+
+            // Populate review rating and summary details
+            var summary = await _context.Reviews
+                .AsNoTracking()
+                .Where(r => r.MovieId == movie.Id && !r.IsDeleted && r.Status == "Approved")
+                .GroupBy(r => r.MovieId)
+                .Select(g => new CinemaBooking.API.DTOs.Reviews.MovieRatingSummaryDto
+                {
+                    TotalReviews = g.Count(),
+                    AverageRating = g.Average(r => (double)r.Rating),
+                    FiveStarCount = g.Count(r => r.Rating == 5),
+                    FourStarCount = g.Count(r => r.Rating == 4),
+                    ThreeStarCount = g.Count(r => r.Rating == 3),
+                    TwoStarCount = g.Count(r => r.Rating == 2),
+                    OneStarCount = g.Count(r => r.Rating == 1)
+                })
+                .FirstOrDefaultAsync();
+
+            if (summary != null)
+            {
+                summary.AverageRating = Math.Round(summary.AverageRating, 1, MidpointRounding.AwayFromZero);
+                dto.AverageRating = summary.AverageRating;
+                dto.ReviewCount = summary.TotalReviews;
+                dto.RatingSummary = summary;
+            }
+            else
+            {
+                dto.AverageRating = 0.0;
+                dto.ReviewCount = 0;
+                dto.RatingSummary = new CinemaBooking.API.DTOs.Reviews.MovieRatingSummaryDto
+                {
+                    AverageRating = 0.0,
+                    TotalReviews = 0,
+                    FiveStarCount = 0,
+                    FourStarCount = 0,
+                    ThreeStarCount = 0,
+                    TwoStarCount = 0,
+                    OneStarCount = 0
+                };
+            }
 
             return ApiResponse.Success(dto);
         }
@@ -230,12 +336,62 @@ namespace CinemaBooking.API.Services.Implementations
                 movie.CreatedBy = currentUsername;
                 movie.IsDeleted = false;
 
-                // Add actors relationship
-                if (createDto.ActorIds != null && createDto.ActorIds.Any())
+                // Process director string if provided
+                if (!string.IsNullOrWhiteSpace(createDto.Director))
                 {
-                    foreach (var actorId in createDto.ActorIds)
+                    var directorName = createDto.Director.Trim();
+                    var director = await _context.Directors
+                        .FirstOrDefaultAsync(d => d.FullName.ToLower() == directorName.ToLower());
+                    if (director == null)
+                    {
+                        director = new Director { FullName = directorName };
+                        await _context.Directors.AddAsync(director);
+                        await _context.SaveChangesAsync();
+                    }
+                    movie.DirectorId = director.DirectorId;
+                }
+
+                // Add actors relationship
+                var mergedActorIds = new List<int>(createDto.ActorIds ?? new List<int>());
+                if (createDto.Actors != null && createDto.Actors.Any())
+                {
+                    foreach (var actorNameRaw in createDto.Actors)
+                    {
+                        var actorName = actorNameRaw.Trim();
+                        if (string.IsNullOrEmpty(actorName)) continue;
+
+                        var actor = await _context.Actors
+                            .FirstOrDefaultAsync(a => a.FullName.ToLower() == actorName.ToLower());
+                        if (actor == null)
+                        {
+                            actor = new Actor { FullName = actorName };
+                            await _context.Actors.AddAsync(actor);
+                            await _context.SaveChangesAsync();
+                        }
+                        if (!mergedActorIds.Contains(actor.ActorId))
+                        {
+                            mergedActorIds.Add(actor.ActorId);
+                        }
+                    }
+                }
+
+                if (mergedActorIds.Any())
+                {
+                    foreach (var actorId in mergedActorIds)
                     {
                         movie.MovieActors.Add(new MovieActor { ActorId = actorId });
+                    }
+                }
+
+                // Add formats relationship
+                if (createDto.MovieFormatIds != null && createDto.MovieFormatIds.Any())
+                {
+                    var formats = await _context.MovieFormats
+                        .Where(f => createDto.MovieFormatIds.Contains(f.MovieFormatId))
+                        .ToListAsync();
+                    foreach (var fmt in formats)
+                    {
+                        movie.MovieFormats.Add(fmt);
                     }
                 }
 
@@ -275,6 +431,7 @@ namespace CinemaBooking.API.Services.Implementations
 
             var movie = await _context.Movies
                 .Include(m => m.MovieActors)
+                .Include(m => m.MovieFormats)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
@@ -304,9 +461,12 @@ namespace CinemaBooking.API.Services.Implementations
                 GenreId = updateDto.GenreId,
                 AgeRatingId = updateDto.AgeRatingId,
                 DirectorId = updateDto.DirectorId,
+                Director = updateDto.Director,
                 IsFeatured = updateDto.IsFeatured,
                 Status = updateDto.Status,
-                ActorIds = updateDto.ActorIds
+                ActorIds = updateDto.ActorIds,
+                Actors = updateDto.Actors,
+                MovieFormatIds = updateDto.MovieFormatIds
             };
             await ValidateMovieAsync(createDto, id);
 
@@ -321,8 +481,54 @@ namespace CinemaBooking.API.Services.Implementations
                 movie.LastModifiedAt = DateTime.UtcNow;
                 movie.LastModifiedBy = currentUsername;
 
+                // Process director string if provided
+                if (!string.IsNullOrWhiteSpace(updateDto.Director))
+                {
+                    var directorName = updateDto.Director.Trim();
+                    var director = await _context.Directors
+                        .FirstOrDefaultAsync(d => d.FullName.ToLower() == directorName.ToLower());
+                    if (director == null)
+                    {
+                        director = new Director { FullName = directorName };
+                        await _context.Directors.AddAsync(director);
+                        await _context.SaveChangesAsync();
+                    }
+                    movie.DirectorId = director.DirectorId;
+                }
+                else
+                {
+                    movie.DirectorId = updateDto.DirectorId;
+                }
+
+                // Process actors
+                var mergedActorIds = new List<int>(updateDto.ActorIds ?? new List<int>());
+                if (updateDto.Actors != null && updateDto.Actors.Any())
+                {
+                    foreach (var actorNameRaw in updateDto.Actors)
+                    {
+                        var actorName = actorNameRaw.Trim();
+                        if (string.IsNullOrEmpty(actorName)) continue;
+
+                        var actor = await _context.Actors
+                            .FirstOrDefaultAsync(a => a.FullName.ToLower() == actorName.ToLower());
+                        if (actor == null)
+                        {
+                            actor = new Actor { FullName = actorName };
+                            await _context.Actors.AddAsync(actor);
+                            await _context.SaveChangesAsync();
+                        }
+                        if (!mergedActorIds.Contains(actor.ActorId))
+                        {
+                            mergedActorIds.Add(actor.ActorId);
+                        }
+                    }
+                }
+
                 // Optimized Actor Update (Compare difference instead of Clear & Add)
-                await UpdateMovieActorsInternalAsync(movie, updateDto.ActorIds);
+                await UpdateMovieActorsInternalAsync(movie, mergedActorIds);
+
+                // Optimized Format Update
+                await UpdateMovieFormatsInternalAsync(movie, updateDto.MovieFormatIds);
 
                 _context.Movies.Update(movie);
                 await _context.SaveChangesAsync();
@@ -539,7 +745,7 @@ namespace CinemaBooking.API.Services.Implementations
 
                 return ApiResponse.Success(true, "Cập nhật danh sách diễn viên thành công.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
                 throw;
@@ -604,6 +810,19 @@ namespace CinemaBooking.API.Services.Implementations
                 }
             }
 
+            // Movie formats validation
+            if (createDto.MovieFormatIds != null && createDto.MovieFormatIds.Any())
+            {
+                var activeFormatsCount = await _context.MovieFormats
+                    .Where(f => createDto.MovieFormatIds.Contains(f.MovieFormatId) && !f.IsDeleted)
+                    .CountAsync();
+
+                if (activeFormatsCount != createDto.MovieFormatIds.Distinct().Count())
+                {
+                    throw new ValidationException("Một hoặc nhiều định dạng phim được chọn không hợp lệ hoặc đã bị xóa.");
+                }
+            }
+
             return ApiResponse.Success(true);
         }
 
@@ -627,6 +846,30 @@ namespace CinemaBooking.API.Services.Implementations
             await Task.CompletedTask;
         }
 
+        private async Task UpdateMovieFormatsInternalAsync(Movie movie, List<int> targetFormatIds)
+        {
+            var currentFormatIds = movie.MovieFormats.Select(f => f.MovieFormatId).ToList();
+            var toAdd = targetFormatIds.Except(currentFormatIds).ToList();
+            var toRemove = currentFormatIds.Except(targetFormatIds).ToList();
+
+            foreach (var removeId in toRemove)
+            {
+                var fmt = movie.MovieFormats.First(x => x.MovieFormatId == removeId);
+                movie.MovieFormats.Remove(fmt);
+            }
+
+            if (toAdd.Any())
+            {
+                var formatsToAdd = await _context.MovieFormats
+                    .Where(f => toAdd.Contains(f.MovieFormatId))
+                    .ToListAsync();
+                foreach (var fmt in formatsToAdd)
+                {
+                    movie.MovieFormats.Add(fmt);
+                }
+            }
+        }
+
         private async Task<MovieAnalyticsDto> CalculateMovieAnalyticsAsync(int movieId)
         {
             var analytics = new MovieAnalyticsDto
@@ -646,11 +889,11 @@ namespace CinemaBooking.API.Services.Implementations
 
                 // Total bookings
                 analytics.BookingCount = await _context.BookingSeats
-                    .CountAsync(bs => bs.Booking.Showtime.MovieId == movieId && bs.Booking.BookingStatus != "Cancelled");
+                    .CountAsync(bs => bs.Booking.Showtime.MovieId == movieId && (bs.Booking.BookingStatus == "Confirmed" || bs.Booking.BookingStatus == "Paid" || bs.Booking.BookingStatus == "CheckedIn"));
 
                 // Total revenue
                 analytics.Revenue = await _context.Bookings
-                    .Where(b => b.Showtime.MovieId == movieId && b.BookingStatus == "Confirmed")
+                    .Where(b => b.Showtime.MovieId == movieId && (b.BookingStatus == "Confirmed" || b.BookingStatus == "Paid" || b.BookingStatus == "CheckedIn"))
                     .SumAsync(b => b.TotalAmount);
 
                 // Rating average

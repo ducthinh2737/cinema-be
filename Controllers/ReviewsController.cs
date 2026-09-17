@@ -40,10 +40,49 @@ namespace CinemaBooking.API.Controllers
             return Ok(new { MovieId = movieId, AverageRating = average });
         }
 
+        [HttpGet("movie/{movieId:int}/summary")]
+        public async Task<IActionResult> GetMovieRatingSummary(int movieId)
+        {
+            var summary = await _reviewService.GetMovieRatingSummaryAsync(movieId);
+            return Ok(summary);
+        }
+
         [HttpGet("top-rated")]
         public async Task<IActionResult> GetTopRatedMovies([FromQuery] int limit = 10)
         {
             var result = await _reviewService.GetTopRatedMoviesAsync(limit);
+            return Ok(result);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetReviews([FromQuery] ReviewQueryParameters queryParams)
+        {
+            var result = await _reviewService.GetPagedReviewsAsync(queryParams);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetReviewAnalytics()
+        {
+            var result = await _reviewService.GetReviewAnalyticsAsync();
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:int}/status")]
+        public async Task<IActionResult> UpdateReviewStatus(int id, [FromBody] UpdateReviewStatusDto statusDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _reviewService.UpdateReviewStatusAsync(id, statusDto.Status);
+            if (result == null)
+            {
+                return NotFound(new { Message = $"Review with ID {id} not found." });
+            }
             return Ok(result);
         }
 
@@ -118,12 +157,65 @@ namespace CinemaBooking.API.Controllers
         [HttpPost("{id:int}/like")]
         public async Task<IActionResult> LikeReview(int id)
         {
-            var result = await _reviewService.LikeReviewAsync(id);
+            var userId = GetCurrentUserId();
+            var result = await _reviewService.LikeReviewAsync(id, userId);
             if (result == null)
             {
                 return NotFound(new { Message = $"Review with ID {id} not found." });
             }
             return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("{id:int}/dislike")]
+        public async Task<IActionResult> DislikeReview(int id)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _reviewService.DislikeReviewAsync(id, userId);
+            if (result == null)
+            {
+                return NotFound(new { Message = $"Review with ID {id} not found." });
+            }
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("{id:int}/replies")]
+        public async Task<IActionResult> AddReply(int id, [FromBody] ReviewReplyCreateDto createDto)
+        {
+            if (createDto == null || string.IsNullOrWhiteSpace(createDto.Content))
+            {
+                return BadRequest("Nội dung không thể để trống.");
+            }
+
+            var userId = GetCurrentUserId();
+            var result = await _reviewService.AddReplyAsync(id, userId, createDto);
+            if (result == null)
+            {
+                return NotFound(new { Message = $"Review with ID {id} not found." });
+            }
+            return Created("", result);
+        }
+
+        [Authorize]
+        [HttpDelete("replies/{replyId:int}")]
+        public async Task<IActionResult> DeleteReply(int replyId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+                var success = await _reviewService.DeleteReplyAsync(replyId, userId, userRole);
+                if (!success)
+                {
+                    return NotFound(new { Message = $"Reply with ID {replyId} not found or already deleted." });
+                }
+                return Ok(new { Message = "Phản hồi đã được xóa thành công." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
 
         private int GetCurrentUserId()

@@ -114,6 +114,24 @@ namespace CinemaBooking.API.Controllers
             
             return Ok(new { Message = "Genre soft deleted successfully." });
         }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteGenre(int id)
+        {
+            var genre = await _context.Genres.FindAsync(id);
+            if (genre == null) return NotFound(new { Message = $"Không tìm thấy thể loại phim với ID {id}." });
+
+            var hasMovies = await _context.Movies.AnyAsync(m => m.GenreId == id);
+            if (hasMovies)
+            {
+                return BadRequest(new { Message = "Không thể xóa vật lý thể loại này vì vẫn còn phim liên kết với nó." });
+            }
+
+            _context.Genres.Remove(genre);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Thể loại phim đã được xóa vật lý khỏi cơ sở dữ liệu." });
+        }
     }
 
     public class GenreDto

@@ -19,10 +19,12 @@ namespace CinemaBooking.API.Services.Interfaces
         Task<ApiResponse<BookingResponseDto>> ConfirmBookingAsync(BookingConfirmDto confirmDto, CancellationToken cancellationToken = default);
         Task<ApiResponse<BookingResponseDto>> ConfirmPaymentAsync(int bookingId, string paymentMethod, CancellationToken cancellationToken = default);
         Task<ApiResponse<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default);
+        Task<ApiResponse<BookingResponseDto>> CheckInBookingAsync(int id, CancellationToken cancellationToken = default);
         Task ExpirePendingBookingsAsync(CancellationToken cancellationToken = default);
         Task ReleaseExpiredBookingsAsync(CancellationToken cancellationToken = default);
         Task<ApiResponse<bool>> ValidateSeatsAsync(int showtimeId, List<int> seatIds, string userId, CancellationToken cancellationToken = default);
         Task<ApiResponse<decimal>> CalculateTotalAmountAsync(int showtimeId, List<int> seatIds, string? promoCode, CancellationToken cancellationToken = default);
         Task<ApiResponse<string>> GenerateBookingCodeAsync(CancellationToken cancellationToken = default);
+        Task<ApiResponse<BookingResponseDto>> ApplyDiscountAsync(int bookingId, string? promoCode, int? pointsToRedeem, CancellationToken cancellationToken = default);
     }
 }

@@ -12,6 +12,9 @@ namespace CinemaBooking.API.Data.Configurations
             
             builder.Property(s => s.RowVersion).IsRowVersion();
 
+            builder.HasQueryFilter(s => !s.IsDeleted);
+            builder.Property(s => s.Status).HasMaxLength(50).HasDefaultValue("Active");
+
             builder.HasMany(s => s.Bookings)
                    .WithOne(b => b.Showtime)
                    .HasForeignKey(b => b.ShowtimeId);

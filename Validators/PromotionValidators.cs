@@ -9,6 +9,7 @@ namespace CinemaBooking.API.Validators
         public PromotionCreateDtoValidator()
         {
             RuleFor(x => x.PromoCode).NotEmpty().WithMessage("Promo code is required.").MaximumLength(50);
+            RuleFor(x => x.Name).NotEmpty().WithMessage("Name is required.").MaximumLength(150);
             RuleFor(x => x.DiscountType).NotEmpty().Must(type => type == "Percentage" || type == "FixedAmount")
                 .WithMessage("Discount type must be either 'Percentage' or 'FixedAmount'.");
             RuleFor(x => x.DiscountValue).GreaterThan(0).WithMessage("Discount value must be greater than 0.");
@@ -24,6 +25,7 @@ namespace CinemaBooking.API.Validators
         public PromotionUpdateDtoValidator()
         {
             RuleFor(x => x.PromoCode).NotEmpty().WithMessage("Promo code is required.").MaximumLength(50);
+            RuleFor(x => x.Name).NotEmpty().WithMessage("Name is required.").MaximumLength(150);
             RuleFor(x => x.DiscountType).NotEmpty().Must(type => type == "Percentage" || type == "FixedAmount")
                 .WithMessage("Discount type must be either 'Percentage' or 'FixedAmount'.");
             RuleFor(x => x.DiscountValue).GreaterThan(0).WithMessage("Discount value must be greater than 0.");
@@ -39,8 +41,8 @@ namespace CinemaBooking.API.Validators
         public PromotionValidateDtoValidator()
         {
             RuleFor(x => x.PromoCode).NotEmpty().WithMessage("Promo code is required.").MaximumLength(50);
-            RuleFor(x => x.UserId).GreaterThan(0).WithMessage("User ID must be greater than 0.");
-            RuleFor(x => x.OrderAmount).GreaterThan(0).WithMessage("Order amount must be greater than 0.");
+            RuleFor(x => x.UserId).GreaterThan(0).When(x => x.UserId.HasValue).WithMessage("User ID must be greater than 0.");
+            RuleFor(x => x.OrderAmount).GreaterThanOrEqualTo(0).WithMessage("Order amount must be non-negative.");
         }
     }
 

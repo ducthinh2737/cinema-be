@@ -20,6 +20,19 @@ namespace CinemaBooking.API.Models.Cinemas
         public DateTime? LastModifiedAt { get; set; }
         public string? LastModifiedBy { get; set; }
 
+        // Professional Cinema management fields
+        public string Status { get; set; } = "Active"; // Active, Maintenance, Inactive
+        public string? OpeningTime { get; set; } = "08:00";
+        public string? ClosingTime { get; set; } = "23:00";
+        public string? GoogleMapsUrl { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? BannerUrl { get; set; }
+        public string? GalleryUrls { get; set; } // Comma-separated urls
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+
         public City City { get; set; } = null!;
         public ICollection<Hall> Halls { get; set; } = new List<Hall>();
     }

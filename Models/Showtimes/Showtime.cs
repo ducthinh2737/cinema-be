@@ -21,6 +21,10 @@ namespace CinemaBooking.API.Models.Showtimes
         public DateTime EndTime { get; set; }
 
         public byte[] RowVersion { get; set; } = null!;
+        public bool? IsPriceOverride { get; set; }
+        public decimal? CustomPrice { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public string Status { get; set; } = "Active";
 
         public Movie Movie { get; set; } = null!;
 

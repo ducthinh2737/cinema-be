@@ -41,6 +41,9 @@ namespace CinemaBooking.API.Middleware
 
             var statusCode = exception switch
             {
+                CinemaBooking.API.Domain.Exceptions.ValidationException => HttpStatusCode.BadRequest,
+                CinemaBooking.API.Domain.Exceptions.BusinessException => HttpStatusCode.BadRequest,
+                CinemaBooking.API.Domain.Exceptions.NotFoundException => HttpStatusCode.NotFound,
                 ArgumentException => HttpStatusCode.BadRequest,
                 InvalidOperationException => HttpStatusCode.BadRequest,
                 KeyNotFoundException => HttpStatusCode.NotFound,

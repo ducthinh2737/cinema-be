@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CinemaBooking.API.Models.Promotions;
 using CinemaBooking.API.Models.Bookings;
+using CinemaBooking.API.Models.Showtimes;
+using CinemaBooking.API.Models.Users;
 using CinemaBooking.API.DTOs.Promotions;
 
 namespace CinemaBooking.API.Repositories.Interfaces
@@ -24,6 +26,8 @@ namespace CinemaBooking.API.Repositories.Interfaces
         Task<Booking?> GetBookingByIdAsync(int bookingId);
         Task UpdateBookingAsync(Booking booking);
         Task AddBookingPromotionAsync(BookingPromotion bookingPromotion);
+        Task<Showtime?> GetShowtimeByIdAsync(int showtimeId);
+        Task<User?> GetUserByIdWithTierAsync(int userId);
 
         Task<bool> SaveChangesAsync();
     }

@@ -24,6 +24,7 @@ namespace CinemaBooking.API.DTOs.Movies
         public string? DirectorName { get; set; }
         public string Status { get; set; } = null!;
         public bool IsFeatured { get; set; }
+        public List<MovieFormatDto> MovieFormats { get; set; } = new();
     }
 
     public class MovieCardDto
@@ -37,6 +38,7 @@ namespace CinemaBooking.API.DTOs.Movies
         public string GenreName { get; set; } = null!;
         public string Status { get; set; } = null!;
         public bool IsFeatured { get; set; }
+        public int AgeRatingId { get; set; }
     }
 
     public class MovieListDto
@@ -51,6 +53,7 @@ namespace CinemaBooking.API.DTOs.Movies
         public string GenreName { get; set; } = null!;
         public string Status { get; set; } = null!;
         public bool IsFeatured { get; set; }
+        public int AgeRatingId { get; set; }
     }
 
     public class MovieAnalyticsDto
@@ -67,12 +70,21 @@ namespace CinemaBooking.API.DTOs.Movies
     {
         public List<MovieActorDto> Actors { get; set; } = new();
         public MovieAnalyticsDto? Analytics { get; set; }
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+        public CinemaBooking.API.DTOs.Reviews.MovieRatingSummaryDto? RatingSummary { get; set; }
     }
 
     public class MovieActorDto
     {
         public int ActorId { get; set; }
         public string ActorName { get; set; } = null!;
+    }
+
+    public class MovieFormatDto
+    {
+        public int MovieFormatId { get; set; }
+        public string FormatName { get; set; } = null!;
     }
 
     public class MovieCreateDto
@@ -87,9 +99,12 @@ namespace CinemaBooking.API.DTOs.Movies
         public int GenreId { get; set; }
         public int AgeRatingId { get; set; }
         public int? DirectorId { get; set; }
+        public string? Director { get; set; }
         public bool IsFeatured { get; set; }
         public string Status { get; set; } = "NowShowing";
         public List<int> ActorIds { get; set; } = new();
+        public List<string>? Actors { get; set; } = new();
+        public List<int> MovieFormatIds { get; set; } = new();
     }
 
     public class MovieUpdateDto
@@ -104,9 +119,12 @@ namespace CinemaBooking.API.DTOs.Movies
         public int GenreId { get; set; }
         public int AgeRatingId { get; set; }
         public int? DirectorId { get; set; }
+        public string? Director { get; set; }
         public bool IsFeatured { get; set; }
         public string Status { get; set; } = "NowShowing";
         public List<int> ActorIds { get; set; } = new();
+        public List<string>? Actors { get; set; } = new();
+        public List<int> MovieFormatIds { get; set; } = new();
     }
 
     public class MovieQueryParameters

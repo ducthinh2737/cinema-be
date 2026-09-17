@@ -73,6 +73,12 @@ namespace CinemaBooking.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { Message = "SubtitleType deleted successfully." });
         }
+
+        [HttpDelete("{id:int}/hard")]
+        public async Task<IActionResult> HardDeleteSubtitleType(int id)
+        {
+            return await DeleteSubtitleType(id);
+        }
     }
 
     public class SubtitleTypeCreateDto

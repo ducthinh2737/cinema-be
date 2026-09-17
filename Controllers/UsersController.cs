@@ -29,6 +29,14 @@ namespace CinemaBooking.API.Controllers
             _env = env;
         }
 
+        [HttpGet("member-tiers")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetMemberTiers()
+        {
+            var tiers = await _context.MemberTiers.ToListAsync();
+            return Ok(tiers);
+        }
+
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -42,6 +50,7 @@ namespace CinemaBooking.API.Controllers
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
+                .Include(u => u.MemberTier)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null)
@@ -60,7 +69,8 @@ namespace CinemaBooking.API.Controllers
                 user.AvatarUrl,
                 user.IsEmailVerified,
                 user.MembershipPoints,
-                Roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList()
+                Roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
+                TierName = user.MemberTier?.TierName ?? "Bronze"
             });
         }
 
@@ -77,6 +87,7 @@ namespace CinemaBooking.API.Controllers
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
+                .Include(u => u.MemberTier)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null)
@@ -107,7 +118,8 @@ namespace CinemaBooking.API.Controllers
                 user.AvatarUrl,
                 user.IsEmailVerified,
                 user.MembershipPoints,
-                Roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList()
+                Roles = user.UserRoles.Select(ur => ur.Role.RoleName).ToList(),
+                TierName = user.MemberTier?.TierName ?? "Bronze"
             });
         }
 

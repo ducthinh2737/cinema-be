@@ -7,7 +7,6 @@ namespace CinemaBooking.API.Models.Cinemas
     {
         public int SeatTypeId { get; set; }
         public string TypeName { get; set; } = null!;
-        public decimal PriceMultiplier { get; set; }
         public string? Description { get; set; }
 
         // Audit & Soft Delete Fields

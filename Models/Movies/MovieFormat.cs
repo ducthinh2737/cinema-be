@@ -16,5 +16,8 @@ namespace CinemaBooking.API.Models.Movies
         public string? CreatedBy { get; set; }
         public DateTime? LastModifiedAt { get; set; }
         public string? LastModifiedBy { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public ICollection<Movie> Movies { get; set; } = new List<Movie>();
     }
 }

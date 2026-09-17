@@ -87,7 +87,6 @@ namespace CinemaBooking.API.Validators
         public SeatTypeCreateDtoValidator()
         {
             RuleFor(x => x.TypeName).NotEmpty().WithMessage("Type name is required.").MaximumLength(50);
-            RuleFor(x => x.PriceMultiplier).GreaterThan(0).WithMessage("Price multiplier must be greater than 0.");
         }
     }
 
@@ -96,7 +95,6 @@ namespace CinemaBooking.API.Validators
         public SeatTypeUpdateDtoValidator()
         {
             RuleFor(x => x.TypeName).NotEmpty().WithMessage("Type name is required.").MaximumLength(50);
-            RuleFor(x => x.PriceMultiplier).GreaterThan(0).WithMessage("Price multiplier must be greater than 0.");
         }
     }
 }

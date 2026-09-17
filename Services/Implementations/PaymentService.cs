@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -209,6 +210,13 @@ namespace CinemaBooking.API.Services.Implementations
                     }
                 }
 
+                // Create pending earn loyalty points transaction
+                var loyaltyService = _serviceProvider.GetService(typeof(ILoyaltyService)) as ILoyaltyService;
+                if (loyaltyService != null)
+                {
+                    await loyaltyService.CreatePendingEarnPointsAsync(booking.UserId, booking.BookingId, booking.TotalAmount);
+                }
+
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("VietQR Payment confirmed successfully. Booking Code: {BookingCode}", booking.BookingCode);
@@ -333,6 +341,54 @@ namespace CinemaBooking.API.Services.Implementations
         {
             var res = await CreateVietQRPaymentAsync(bookingId);
             return res.QrImageUrl;
+        }
+
+        public async Task<PaymentResponseDto> ProcessSePayWebhookAsync(SePayWebhookDto dto)
+        {
+            _logger.LogInformation("Processing SePay Webhook for transaction {Id}, amount {Amount}, content: {Content}", dto.Id, dto.TransferAmount, dto.Content);
+
+            if (dto.TransferType != null && !dto.TransferType.Equals("in", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Chỉ chấp nhận các giao dịch chuyển tiền vào (incoming transfer).");
+            }
+
+            // Extract booking code from transfer message content (e.g. sepayXXXXXX or BK-20260603-086362)
+            var match = Regex.Match(dto.Content ?? "", @"(sepay[a-zA-Z0-9]+|BK-\d{8}-[A-Z0-9]{6})", RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                throw new ArgumentException("Nội dung chuyển khoản không chứa mã đặt vé hợp lệ.");
+            }
+
+            var bookingCode = match.Value;
+            var booking = await _context.Bookings
+                .FirstOrDefaultAsync(b => b.BookingCode.ToLower() == bookingCode.ToLower());
+
+            if (booking == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy đơn đặt vé với mã code: {bookingCode}");
+            }
+
+            if (booking.BookingStatus == "Confirmed" || booking.BookingStatus == "Paid")
+            {
+                _logger.LogWarning("Booking {BookingCode} has already been paid/confirmed.", bookingCode);
+                var existingPayment = await _context.Payments.FirstOrDefaultAsync(p => p.BookingId == booking.BookingId);
+                return new PaymentResponseDto
+                {
+                    PaymentId = existingPayment?.PaymentId ?? 0,
+                    BookingId = booking.BookingId,
+                    Amount = booking.TotalAmount,
+                    PaymentStatus = "Paid",
+                    PaymentDate = existingPayment?.PaymentDate ?? DateTime.UtcNow
+                };
+            }
+
+            if (dto.TransferAmount < booking.TotalAmount)
+            {
+                throw new InvalidOperationException($"Số tiền chuyển khoản ({dto.TransferAmount} VND) không đủ so với tổng tiền vé ({booking.TotalAmount} VND).");
+            }
+
+            // Confirm payment and return details
+            return await ConfirmPaymentAsync(booking.BookingId);
         }
 
         #endregion
